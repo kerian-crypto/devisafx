@@ -39,9 +39,6 @@ app.register_blueprint(auth_bp)
 def health_check():
     return 'OK', 200
     
-# Créer les tables si elles n'existent pas
-with app.app_context():
-    db.create_all()
         
     # Créer un admin par défaut si aucun n'existe
     if not Utilisateur.query.filter_by(est_admin=True).first():
@@ -60,3 +57,4 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
