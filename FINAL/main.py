@@ -39,22 +39,8 @@ app.register_blueprint(auth_bp)
 def health_check():
     return 'OK', 200
     
-        
-    # Créer un admin par défaut si aucun n'existe
-    if not Utilisateur.query.filter_by(est_admin=True).first():
-        admin = Utilisateur(
-            nom=app.config['ADMIN_USERNAME'],
-            telephone=app.config['ADMIN_NUMBER'],
-            email=app.config['ADMIN_EMAIL'],
-            pays='CM',
-            mot_de_passe_hash=hashlib.sha256(app.config['ADMIN_PASSWORD'].encode()).hexdigest(),  # À changer en production
-            email_verifie=True,
-            est_admin=True
-        )
-        db.session.add(admin)
-        db.session.commit()
-    
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
