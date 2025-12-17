@@ -15,7 +15,7 @@ class Config:
         SQLALCHEMY_DATABASE_URI = DATABASE_URL
     else:
         # Configuration locale (MySQL)
-        SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://root:@localhost/devisa_fx"
+        SQLALCHEMY_DATABASE_URI = f"postgresql://devisafx_user:R4JtxWXRunbI4QWF3OmPhAb9nkjCtIbd@dpg-d51do4juibrs73bct8gg-a.virginia-postgres.render.com/devisafx"
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
@@ -48,4 +48,5 @@ class Config:
     ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'ddevisafx@gmail.com')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'ddevisafxcrypto2025')
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'Devis-Fx')
+
     ADMIN_NUMBER = os.environ.get('ADMIN_NUMBER', '237696574076')
