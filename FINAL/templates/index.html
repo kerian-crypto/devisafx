@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Devisa-FX - Échange USDT/XAF Sécurisé{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <h1 class="hero-title">Échangez USDT contre XAF en toute sécurité</h1>
+        <p class="hero-subtitle">
+            Plateforme d'échange cryptomonnaie/monnaie locale pour l'Afrique Centrale. 
+            Transactions rapides, frais compétitifs et support 24/7.
+        </p>
+        <div class="mt-4">
+            <a href="{{ url_for('main.register') }}" class="btn btn-light btn-lg me-3">
+                <i class="fas fa-user-plus"></i> Commencer maintenant
+            </a>
+            <a href="{{ url_for('main.calculate') }}" class="btn btn-outline-light btn-lg">
+                <i class="fas fa-calculator"></i> Calculer un taux
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Pourquoi choisir Devisa-FX ?</h2>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4>Sécurité Maximale</h4>
+                    <p>Transactions cryptées et vérifiées. Vos fonds sont en sécurité à chaque étape.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h4>Transactions Rapides</h4>
+                    <p>Échanges effectués en moins de 30 minutes après confirmation du paiement.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h4>Support 24/7</h4>
+                    <p>Notre équipe est disponible pour vous accompagner à tout moment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Supported Networks -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">Réseaux supportés</h2>
+        
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-2 col-4 text-center">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">TRC20</h5>
+                        <p class="card-text">Tron Network</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2 col-4 text-center">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">TON</h5>
+                        <p class="card-text">Toncoin</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2 col-4 text-center">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">APTOS</h5>
+                        <p class="card-text">Aptos Network</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2 col-4 text-center">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">ETH</h5>
+                        <p class="card-text">Ethereum</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-2 col-4 text-center">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">SOL</h5>
+                        <p class="card-text">Solana</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Mobile Operators -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Opérateurs mobiles supportés</h2>
+        
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-3 col-6 text-center">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">MTN</h5>
+                        <p class="card-text">Mobile Money</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 col-6 text-center">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Orange</h5>
+                        <p class="card-text">Money</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 col-6 text-center">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Moov</h5>
+                        <p class="card-text">Flooz</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 col-6 text-center">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Togocel</h5>
+                        <p class="card-text">Mobile Money</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="py-5 bg-primary text-white">
+    <div class="container text-center">
+        <h2 class="mb-4">Prêt à commencer ?</h2>
+        <p class="mb-4">Rejoignez des milliers d'utilisateurs qui font confiance à Devisa-FX pour leurs échanges cryptomonnaie.</p>
+        <a href="{{ url_for('main.register') }}" class="btn btn-light btn-lg">
+            <i class="fas fa-rocket"></i> Créer un compte gratuit
+        </a>
+    </div>
+</section>
+
+<!-- How It Works -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Comment ça marche ?</h2>
+        
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="fas fa-user-plus fa-2x"></i>
+                    </div>
+                    <h4 class="mt-3">1. Inscription</h4>
+                    <p>Créez votre compte en 2 minutes avec votre email et téléphone.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="fas fa-exchange-alt fa-2x"></i>
+                    </div>
+                    <h4 class="mt-3">2. Choisissez l'opération</h4>
+                    <p>Sélectionnez Achat ou Vente USDT et remplissez le formulaire.</p>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                    <h4 class="mt-3">3. Confirmation</h4>
+                    <p>Effectuez le paiement mobile money et recevez vos fonds rapidement.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord Admin - Devisa-FX{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+    .notification-item {
+        border-left: 4px solid var(--secondary-color);
+        padding: 10px;
+        margin-bottom: 10px;
+        background: #f8f9fa;
+    }
+    .notification-item.unread {
+        background: #e3f2fd;
+        border-left-color: var(--accent-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <h1 class="user-welcome">Tableau de bord Administrateur</h1>
+    <p class="text-muted">Gestion complète de la plateforme Devisa-FX</p>
+</div>
+
+<!-- Statistiques -->
+<div class="admin-stats">
+    <div class="admin-stat-card">
+        <div class="stats-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="admin-stat-value">{{ total_utilisateurs }}</div>
+        <div class="admin-stat-label">Utilisateurs</div>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="stats-icon">
+            <i class="fas fa-exchange-alt"></i>
+        </div>
+        <div class="admin-stat-value">{{ transactions_aujourdhui }}</div>
+        <div class="admin-stat-label">Transactions aujourd'hui</div>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="stats-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="admin-stat-value">{{ transactions_attente }}</div>
+        <div class="admin-stat-label">En attente</div>
+    </div>
+    
+    <div class="admin-stat-card">
+        <div class="stats-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="admin-stat-value">{{ transactions_complete }}</div>
+        <div class="admin-stat-label">Complétées</div>
+    </div>
+</div>
+
+<!-- Chiffre d'affaires -->
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Chiffre d'affaires</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <h6>Aujourd'hui</h6>
+                        <h3 class="text-success">{{ ca_aujourdhui }}</h3>
+                        <small class="text-muted">XAF</small>
+                    </div>
+                    <div class="col-6">
+                        <h6>Total</h6>
+                        <h3>{{ ca_total }}</h3>
+                        <small class="text-muted">XAF</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Actions rapides</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin.admin_transactions') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-exchange-alt me-2"></i>Gérer les transactions
+                    </a>
+                    <a href="{{ url_for('admin.admin_wallets') }}" class="btn btn-outline-success">
+                        <i class="fas fa-wallet me-2"></i>Gérer les portefeuilles
+                    </a>
+                    <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="updateRatesModal">
+                        <i class="fas fa-chart-bar me-2"></i>Mettre à jour les taux
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dernières transactions -->
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Dernières transactions</h5>
+        <a href="{{ url_for('admin.admin_transactions') }}" class="btn btn-sm btn-primary">Voir toutes</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Utilisateur</th>
+                        <th>Type</th>
+                        <th>Montant</th>
+                        <th>Date</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in dernieres_transactions %}
+                    <tr>
+                        <td>{{ transaction.identifiant_transaction[:8] }}...</td>
+                        
+                        <td>
+                            {% if transaction.type_transaction == 'achat' %}
+                            <span class="badge bg-primary">Achat</span>
+                            {% else %}
+                            <span class="badge bg-success">Vente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transaction.type_transaction == 'achat' %}
+                            {{ formater_montant(transaction.montant_xaf) }} XAF
+                            {% else %}
+                            {{ transaction.montant_usdt }} USDT
+                            {% endif %}
+                        </td>
+                        <td>{{ transaction.date_creation.strftime('%H:%M') }}</td>
+                        <td>
+                            <span class="status-badge status-{{ transaction.statut }}">
+                                {{ transaction.statut.replace('_', ' ') }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <a href="{{ url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="Voir">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% if transaction.statut == 'en_attente' %}
+                                <button class="btn btn-sm btn-outline-success" 
+                                        onclick="validateTransaction('{{ transaction.identifiant_transaction }}')"
+                                        title="Valider">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#rejectModal"
+                                        data-transaction-id="{{ transaction.identifiant_transaction }}"
+                                        title="Rejeter">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4">
+                            <i class="fas fa-exchange-alt fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">Aucune transaction récente</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications -->
+{% if notifications %}
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Notifications récentes</h5>
+        <button class="btn btn-sm btn-outline-secondary" onclick="markAllRead()">
+            Tout marquer comme lu
+        </button>
+    </div>
+    <div class="card-body">
+        {% for notification in notifications %}
+        <div class="notification-item {% if not notification.est_lue %}unread{% endif %}" 
+             id="notification-{{ notification.id }}">
+            <div class="d-flex justify-content-between">
+                <div>
+                    <p class="mb-1">{{ notification.message }}</p>
+                    <small class="text-muted">{{ notification.date_creation.strftime('%d/%m/%Y %H:%M') }}</small>
+                </div>
+                <div>
+                    {% if not notification.est_lue %}
+                    <button class="btn btn-sm btn-outline-primary" 
+                            onclick="markNotificationRead({{ notification.id }})">
+                        Marquer comme lu
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Modal pour rejeter une transaction -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rejeter la transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="rejectForm">
+                <div class="modal-body">
+                    <input type="hidden" id="reject_transaction_id" name="transaction_id">
+                    <div class="mb-3">
+                        <label for="motif_rejet" class="form-label">Motif du rejet *</label>
+                        <textarea class="form-control" id="motif_rejet" name="motif" rows="3" 
+                                  placeholder="Expliquez pourquoi vous rejetez cette transaction..." required></textarea>
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Cette action est irréversible. L'utilisateur sera notifié du rejet.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Rejeter la transaction</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour mettre à jour les taux -->
+<div class="modal fade" id="updateRatesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mettre à jour les taux</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateRatesForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="taux_achat" class="form-label">Taux d'achat (XAF/USDT)</label>
+                        <input type="number" class="form-control" id="taux_achat" name="taux_achat" 
+                               step="0.01" placeholder="Ex: 590" required>
+                        <div class="form-text">Taux auquel nous achetons les USDT</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="taux_vente" class="form-label">Taux de vente (XAF/USDT)</label>
+                        <input type="number" class="form-control" id="taux_vente" name="taux_vente" 
+                               step="0.01" placeholder="Ex: 610" required>
+                        <div class="form-text">Taux auquel nous vendons les USDT</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Les nouveaux taux s'appliqueront immédiatement à toutes les nouvelles transactions.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTransactionId = null;
+
+// Configuration du modal de rejet
+document.getElementById('rejectModal').addEventListener('show.bs.modal', function(event) {
+    const button = event.relatedTarget;
+    currentTransactionId = button.getAttribute('data-transaction-id');
+    document.getElementById('reject_transaction_id').value = currentTransactionId;
+});
+
+// Soumission du formulaire de rejet
+document.getElementById('rejectForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(`/admin/transaction/${currentTransactionId}/reject`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Une erreur est survenue');
+    });
+});
+
+// Valider une transaction
+function validateTransaction(transactionId) {
+    if (confirm('Voulez-vous vraiment valider cette transaction ?')) {
+        fetch(`/admin/transaction/${transactionId}/validate`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    }
+}
+
+// Marquer une notification comme lue
+function markNotificationRead(notificationId) {
+    fetch(`/admin/notification/${notificationId}/read`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById(`notification-${notificationId}`).classList.remove('unread');
+        }
+    });
+}
+
+// Marquer toutes les notifications comme lues
+function markAllRead() {
+    document.querySelectorAll('.notification-item.unread').forEach(item => {
+        const notificationId = item.id.split('-')[1];
+        markNotificationRead(notificationId);
+    });
+}
+
+// Mettre à jour les taux
+document.getElementById('updateRatesForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/admin/update-rates', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Taux mis à jour avec succès !');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Une erreur est survenue');
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Inscription - Devisa-FX{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-user-plus me-2"></i>Créer un compte</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('main.register') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nom" class="form-label">Nom complet *</label>
+                            {{ form.nom(class="form-control", placeholder="Votre nom complet") }}
+                            {% if form.nom.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.nom.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="telephone" class="form-label">Numéro de téléphone *</label>
+                            {{ form.telephone(class="form-control", placeholder="Ex: 237612345678") }}
+                            <small class="text-muted">Format international requis</small>
+                            {% if form.telephone.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.telephone.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Adresse email *</label>
+                        {{ form.email(class="form-control", placeholder="exemple@email.com") }}
+                        {% if form.email.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.email.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="pays" class="form-label">Pays *</label>
+                        {{ form.pays(class="form-select") }}
+                        {% if form.pays.errors %}
+                        <div class="text-danger small mt-1">
+                            {% for error in form.pays.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="mot_de_passe" class="form-label">Mot de passe *</label>
+                            {{ form.mot_de_passe(class="form-control", placeholder="Minimum 8 caractères") }}
+                            {% if form.mot_de_passe.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.mot_de_passe.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="confirmation_mot_de_passe" class="form-label">Confirmer le mot de passe *</label>
+                            {{ form.confirmation_mot_de_passe(class="form-control", placeholder="Répétez le mot de passe") }}
+                            {% if form.confirmation_mot_de_passe.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.confirmation_mot_de_passe.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="terms" required>
+                        <label class="form-check-label" for="terms">
+                            J'accepte les <a href="#" class="text-primary">conditions d'utilisation</a> et la <a href="#" class="text-primary">politique de confidentialité</a>
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        {{ form.soumettre(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <p class="mb-2">Ou inscrivez-vous avec</p>
+                    <a href="{{ url_for('auth.login_google') }}" class="btn btn-outline-danger">
+                        <i class="fab fa-google me-2"></i>Google
+                    </a>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-0">Vous avez déjà un compte ? 
+                        <a href="{{ url_for('main.login') }}" class="text-primary">Connectez-vous</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="alert alert-info mt-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Important :</strong> Votre numéro de téléphone doit être actif et associé à un compte mobile money pour effectuer des transactions.
+        </div>
+    </div>
+</div>
+{% endblock %}

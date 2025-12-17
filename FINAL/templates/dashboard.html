@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord - Devisa-FX{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2 class="user-welcome">Bonjour, {{ current_user.nom }}!</h2>
+            <p class="text-muted">Bienvenue sur votre tableau de bord</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="user-balance">{{ solde_usdt }} USDT</div>
+            <small class="text-muted">Solde estimé</small>
+        </div>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <a href="{{ url_for('main.buy') }}" class="quick-action-btn">
+        <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+        <h5>Acheter USDT</h5>
+        <p class="text-muted">Échanger XAF contre USDT</p>
+    </a>
+    <a href="{{ url_for('main.sell') }}" class="quick-action-btn">
+        <i class="fas fa-money-bill-wave fa-2x mb-2"></i>
+        <h5>Vendre USDT</h5>
+        <p class="text-muted">Échanger USDT contre XAF</p>
+    </a>
+    <a href="{{ url_for('main.calculate') }}" class="quick-action-btn">
+        <i class="fas fa-calculator fa-2x mb-2"></i>
+        <h5>Calculer</h5>
+        <p class="text-muted">Estimer vos transactions</p>
+    </a>
+</div>
+
+<div class="recent-transactions">
+    <h4 class="mb-4">Dernières transactions</h4>
+    
+    {% if transactions %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Montant</th>
+                    <th>Réseau</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction.date_creation.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        {% if transaction.type_transaction == 'achat' %}
+                        <span class="badge bg-primary">Achat</span>
+                        {% else %}
+                        <span class="badge bg-success">Vente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if transaction.type_transaction == 'achat' %}
+                        {{ formater_montant(transaction.montant_xaf) }} XAF
+                        {% else %}
+                        {{ transaction.montant_usdt }} USDT
+                        {% endif %}
+                    </td>
+                    <td>{{ transaction.reseau }}</td>
+                    <td>
+                        <span class="status-badge status-{{ transaction.statut }}">
+                            {{ transaction.statut.replace('_', ' ') }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction) }}" 
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+        <p class="text-muted">Aucune transaction pour le moment</p>
+        <a href="{{ url_for('main.buy') }}" class="btn btn-primary">Effectuer ma première transaction</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

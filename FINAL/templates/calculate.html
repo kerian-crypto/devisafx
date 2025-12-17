@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block title %}Calculateur de taux - Devisa-FX{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-calculator me-2"></i>Calculateur de taux USDT/XAF</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('main.calculate') }}" id="calculate-form">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="type_calcul" class="form-label">Type de calcul *</label>
+                            {{ form.type_calcul(class="form-select") }}
+                            {% if form.type_calcul.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.type_calcul.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="taux_mondial" class="form-label">Taux mondial du jour (XAF) *</label>
+                            {{ form.taux_mondial(class="form-control", placeholder="Ex: 600") }}
+                            {% if form.taux_mondial.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.taux_mondial.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="benefice" class="form-label">Bénéfice souhaité (XAF) *</label>
+                            {{ form.benefice(class="form-control", placeholder="Ex: 10") }}
+                            <div class="form-text">
+                                Bénéfice par USDT que vous souhaitez réaliser
+                            </div>
+                            {% if form.benefice.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.benefice.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="montant" class="form-label">Montant à échanger *</label>
+                            {{ form.montant(class="form-control", placeholder="Montant en XAF ou USDT") }}
+                            <div class="form-text" id="montant-help">
+                                Montant en XAF pour la vente, en USDT pour l'achat
+                            </div>
+                            {% if form.montant.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.montant.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.soumettre(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+                
+                <!-- Résultats du calcul -->
+                {% if resultat %}
+                <div class="card mt-4" id="calculate-result">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Résultats du calcul</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if form.type_calcul.data == 'vente' %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Sans frais opérateur</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="mb-1"><strong>USDT obtenus :</strong></p>
+                                        <h3 class="text-primary">{{ resultat.usdt_sans_frais }} USDT</h3>
+                                        <p class="mb-0 text-muted">Taux appliqué : {{ (form.taux_mondial.data|float + form.benefice.data|float)|round(2) }} XAF</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Avec frais opérateur</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="mb-1"><strong>USDT obtenus :</strong></p>
+                                        <h3 class="text-success">{{ resultat.usdt_final }} USDT</h3>
+                                        <p class="mb-1"><strong>Frais opérateur :</strong> {{ resultat.frais_operateur }} XAF</p>
+                                        <p class="mb-0 text-muted">Taux final : {{ resultat.taux_final }} XAF/USDT</p>
+                                        <small class="text-muted">Frais par USDT : {{ resultat.frais_par_usdt }} XAF</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Pour un montant de <strong>{{ form.montant.data }} XAF</strong>, 
+                            vous recevrez <strong>{{ resultat.usdt_final }} USDT</strong> après déduction des frais opérateur.
+                        </div>
+                        {% else %}
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Sans frais opérateur</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="mb-1"><strong>XAF obtenus :</strong></p>
+                                        <h3 class="text-primary">{{ resultat.xaf_sans_frais }} XAF</h3>
+                                        <p class="mb-0 text-muted">Taux appliqué : {{ (form.taux_mondial.data|float - form.benefice.data|float)|round(2) }} XAF</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">Avec frais opérateur</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="mb-1"><strong>XAF obtenus :</strong></p>
+                                        <h3 class="text-success">{{ resultat.xaf_final }} XAF</h3>
+                                        <p class="mb-1"><strong>Frais opérateur :</strong> {{ resultat.frais_operateur }} XAF</p>
+                                        <p class="mb-0 text-muted">Taux final : {{ resultat.taux_final }} XAF/USDT</p>
+                                        <small class="text-muted">Frais par USDT : {{ resultat.frais_par_usdt }} XAF</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Pour un montant de <strong>{{ form.montant.data }} USDT</strong>, 
+                            vous recevrez <strong>{{ resultat.xaf_final }} XAF</strong> après déduction des frais opérateur.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Message d'erreur -->
+                {% if erreur %}
+                <div class="alert alert-danger mt-4" id="calculate-error">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    {{ erreur }}
+                </div>
+                {% endif %}
+                
+                <!-- Explications -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Comment utiliser ce calculateur ?</h6>
+                    </div>
+                    <div class="card-body">
+                        <h6>Pour calculer le taux de vente USDT :</h6>
+                        <ol class="mb-3">
+                            <li>Sélectionnez "Calculer le taux de vente USDT"</li>
+                            <li>Entrez le taux mondial du jour (ex: 600 XAF pour 1 USDT)</li>
+                            <li>Indiquez le bénéfice que vous souhaitez réaliser par USDT (en XAF)</li>
+                            <li>Entrez le montant en XAF que vous voulez échanger</li>
+                        </ol>
+                        
+                        <h6>Pour calculer le taux d'achat USDT :</h6>
+                        <ol>
+                            <li>Sélectionnez "Calculer le taux d'achat USDT"</li>
+                            <li>Entrez le taux mondial du jour</li>
+                            <li>Indiquez le bénéfice que vous souhaitez réaliser par USDT (en XAF)</li>
+                            <li>Entrez le montant en USDT que vous voulez vendre</li>
+                        </ol>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Note :</strong> Les frais opérateur sont calculés selon notre grille tarifaire standard.
+                            Les montants minimum et maximum sont respectés selon le type d'opération.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grille tarifaire -->
+<div class="row mt-4">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-percentage me-2"></i>Grille des frais - Vente USDT</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Montant XAF</th>
+                            <th>Frais opérateur</th>
+                            <th>USDT minimum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>5,000 - 299,999 XAF</td>
+                            <td>1.51%</td>
+                            <td>~8.33 USDT</td>
+                        </tr>
+                        <tr>
+                            <td>300,000 - 499,999 XAF</td>
+                            <td>1%</td>
+                            <td>~500 USDT</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td>≥ 500,000 XAF</td>
+                            <td>Contacter</td>
+                            <td>Négociable</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-percentage me-2"></i>Grille des frais - Achat USDT</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Montant USDT</th>
+                            <th>Frais opérateur</th>
+                            <th>XAF minimum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1 - 499 USDT</td>
+                            <td>1.51%</td>
+                            <td>~600 XAF</td>
+                        </tr>
+                        <tr>
+                            <td>500 - 999 USDT</td>
+                            <td>10%</td>
+                            <td>~300,000 XAF</td>
+                        </tr>
+                        <tr class="table-secondary">
+                            <td>≥ 1,000 USDT</td>
+                            <td>Contacter</td>
+                            <td>Négociable</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeCalculSelect = document.getElementById('type_calcul');
+    const montantHelp = document.getElementById('montant-help');
+    
+    function updateMontantHelp() {
+        if (typeCalculSelect.value === 'vente') {
+            montantHelp.textContent = 'Montant en XAF à échanger (minimum: 5,000 XAF)';
+        } else {
+            montantHelp.textContent = 'Montant en USDT à échanger (minimum: 1 USDT)';
+        }
+    }
+    
+    typeCalculSelect.addEventListener('change', updateMontantHelp);
+    updateMontantHelp(); // Initial call
+});
+</script>
+{% endblock %}

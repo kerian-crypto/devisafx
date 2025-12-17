@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des portefeuilles - Devisa-FX{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+    .wallet-card {
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+    .wallet-card.crypto {
+        border-left-color: var(--secondary-color);
+    }
+    .wallet-card.mobile {
+        border-left-color: var(--success-color);
+    }
+    .wallet-address {
+        font-family: monospace;
+        background: #f8f9fa;
+        padding: 5px 10px;
+        border-radius: 3px;
+        word-break: break-all;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="user-welcome">Gestion des portefeuilles</h1>
+            <p class="text-muted">Gérez les adresses de réception et les numéros marchands</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWalletModal">
+                <i class="fas fa-plus me-2"></i>Ajouter un portefeuille
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Portefeuilles Crypto -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-coins me-2"></i>Portefeuilles Cryptomonnaie</h5>
+    </div>
+    <div class="card-body">
+        <div class="row" id="crypto-wallets">
+            {% for wallet in portefeuilles if wallet.type_portefeuille == 'crypto' %}
+            <div class="col-md-6 mb-3">
+                <div class="card wallet-card crypto">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h5 class="card-title mb-1">{{ wallet.reseau }}</h5>
+                                {% if wallet.pays %}
+                                <span class="badge bg-info">{{ wallet.pays }}</span>
+                                {% endif %}
+                                {% if wallet.est_actif %}
+                                <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                                {% endif %}
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <button class="dropdown-item" onclick="copyWallet('{{ wallet.adresse }}')">
+                                            <i class="fas fa-copy me-2"></i>Copier
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" 
+                                                onclick="editWallet({{ wallet.id }})">
+                                            <i class="fas fa-edit me-2"></i>Modifier
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item text-danger" 
+                                                onclick="deleteWallet({{ wallet.id }})">
+                                            <i class="fas fa-trash me-2"></i>Supprimer
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="wallet-address mb-3">
+                            {{ wallet.adresse }}
+                        </div>
+                        
+                        <small class="text-muted">
+                            Ajouté le {{ wallet.date_ajout.strftime('%d/%m/%Y') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="text-center py-4">
+                    <i class="fas fa-wallet fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucun portefeuille cryptomonnaie configuré</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Portefeuilles Mobile Money -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-mobile-alt me-2"></i>Numéros Marchands Mobile Money</h5>
+    </div>
+    <div class="card-body">
+        <div class="row" id="mobile-wallets">
+            {% for wallet in portefeuilles if wallet.type_portefeuille == 'mobile_money' %}
+            <div class="col-md-4 mb-3">
+                <div class="card wallet-card mobile">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h5 class="card-title mb-1">{{ wallet.reseau }}</h5>
+                                {% if wallet.pays %}
+                                <span class="badge bg-info">{{ wallet.pays }}</span>
+                                {% endif %}
+                                {% if wallet.est_actif %}
+                                <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inactif</span>
+                                {% endif %}
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                        type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <button class="dropdown-item" onclick="copyWallet('{{ wallet.adresse }}')">
+                                            <i class="fas fa-copy me-2"></i>Copier
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item" 
+                                                onclick="editWallet({{ wallet.id }})">
+                                            <i class="fas fa-edit me-2"></i>Modifier
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item text-danger" 
+                                                onclick="deleteWallet({{ wallet.id }})">
+                                            <i class="fas fa-trash me-2"></i>Supprimer
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="wallet-address mb-3 text-center">
+                            <h4 class="mb-0">{{ wallet.adresse }}</h4>
+                        </div>
+                        
+                        <small class="text-muted">
+                            {% if wallet.pays %}Pour {{ wallet.pays }}{% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-12">
+                <div class="text-center py-4">
+                    <i class="fas fa-mobile-alt fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Aucun numéro marchand configuré</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'ajout -->
+<div class="modal fade" id="addWalletModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter un portefeuille</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addWalletForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="wallet_type" class="form-label">Type de portefeuille *</label>
+                        <select class="form-select" id="wallet_type" name="type" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="crypto">Cryptomonnaie</option>
+                            <option value="mobile_money">Mobile Money</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="wallet_reseau" class="form-label">Réseau/Opérateur *</label>
+                        <select class="form-select" id="wallet_reseau" name="reseau" required>
+                            <option value="">Sélectionner...</option>
+                            <optgroup label="Cryptomonnaies">
+                                <option value="TRC20">TRC20 (Tron)</option>
+                                <option value="ETHEREUM">Ethereum (ERC20)</option>
+                                <option value="SOL">Solana</option>
+                                <option value="USDT_TON">USDT_TON</option>
+                                <option value="USDT_APTOS">USDT_APTOS</option>
+                            </optgroup>
+                            <optgroup label="Mobile Money">
+                                <option value="MTN">MTN Mobile Money</option>
+                                <option value="ORANGE">Orange Money</option>
+                                <option value="MOOV">Moov Money</option>
+                                <option value="TOGOCEL">Togocel Money</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="wallet_address" class="form-label">Adresse/Numéro *</label>
+                        <input type="text" class="form-control" id="wallet_address" name="adresse" required>
+                        <div class="form-text" id="address-help">
+                            Entrez l'adresse du wallet ou le numéro marchand
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="wallet_country" class="form-label">Pays (optionnel)</label>
+                        <select class="form-select" id="wallet_country" name="pays">
+                            <option value="">Tous pays</option>
+                            <option value="CM">Cameroun</option>
+                            <option value="TG">Togo</option>
+                            <option value="GA">Gabon</option>
+                            <option value="CF">République Centrafricaine</option>
+                            <option value="CD">RD Congo</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="wallet_active" name="actif" checked>
+                        <label class="form-check-label" for="wallet_active">Portefeuille actif</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Ajouter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'édition -->
+<div class="modal fade" id="editWalletModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier le portefeuille</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editWalletForm">
+                <input type="hidden" id="edit_wallet_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_wallet_type" class="form-label">Type de portefeuille</label>
+                        <select class="form-select" id="edit_wallet_type" name="type" required>
+                            <option value="crypto">Cryptomonnaie</option>
+                            <option value="mobile_money">Mobile Money</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_wallet_reseau" class="form-label">Réseau/Opérateur</label>
+                        <input type="text" class="form-control" id="edit_wallet_reseau" name="reseau" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_wallet_address" class="form-label">Adresse/Numéro</label>
+                        <input type="text" class="form-control" id="edit_wallet_address" name="adresse" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="edit_wallet_country" class="form-label">Pays</label>
+                        <select class="form-select" id="edit_wallet_country" name="pays">
+                            <option value="">Tous pays</option>
+                            <option value="CM">Cameroun</option>
+                            <option value="TG">Togo</option>
+                            <option value="GA">Gabon</option>
+                            <option value="CF">République Centrafricaine</option>
+                            <option value="CD">RD Congo</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" class="form-check-input" id="edit_wallet_active" name="actif">
+                        <label class="form-check-label" for="edit_wallet_active">Portefeuille actif</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Copier une adresse
+function copyWallet(address) {
+    navigator.clipboard.writeText(address).then(() => {
+        alert('Adresse copiée dans le presse-papier !');
+    });
+}
+
+// Ajouter un portefeuille
+document.getElementById('addWalletForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('/admin/wallet/add', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Portefeuille ajouté avec succès !');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Une erreur est survenue');
+    });
+});
+
+// Éditer un portefeuille
+function editWallet(walletId) {
+    fetch(`/admin/wallet/${walletId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('edit_wallet_id').value = data.wallet.id;
+                document.getElementById('edit_wallet_type').value = data.wallet.type_portefeuille;
+                document.getElementById('edit_wallet_reseau').value = data.wallet.reseau;
+                document.getElementById('edit_wallet_address').value = data.wallet.adresse;
+                document.getElementById('edit_wallet_country').value = data.wallet.pays || '';
+                document.getElementById('edit_wallet_active').checked = data.wallet.est_actif;
+                
+                new bootstrap.Modal(document.getElementById('editWalletModal')).show();
+            }
+        });
+}
+
+// Soumission du formulaire d'édition
+document.getElementById('editWalletForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const walletId = document.getElementById('edit_wallet_id').value;
+    const formData = new FormData(this);
+    
+    fetch(`/admin/wallet/${walletId}/update`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Portefeuille modifié avec succès !');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    });
+});
+
+// Supprimer un portefeuille
+function deleteWallet(walletId) {
+    if (confirm('Voulez-vous vraiment supprimer ce portefeuille ?')) {
+        fetch(`/admin/wallet/${walletId}/delete`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Portefeuille supprimé avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        });
+    }
+}
+
+// Aide contextuelle pour l'adresse
+document.getElementById('wallet_type').addEventListener('change', function() {
+    const helpText = document.getElementById('address-help');
+    if (this.value === 'crypto') {
+        helpText.textContent = 'Entrez l\'adresse du wallet cryptomonnaie';
+    } else if (this.value === 'mobile_money') {
+        helpText.textContent = 'Entrez le numéro marchand mobile money';
+    }
+});
+</script>
+{% endblock %}

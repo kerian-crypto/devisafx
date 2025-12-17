@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des transactions - Devisa-FX{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+    .filter-badge {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .filter-badge.active {
+        background: var(--primary-color) !important;
+        color: white !important;
+    }
+    .transaction-details {
+        background: #f8f9fa;
+        border-radius: 5px;
+        padding: 10px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="user-welcome">Gestion des transactions</h1>
+            <p class="text-muted">Visualisez et gérez toutes les transactions de la plateforme</p>
+        </div>
+        <div>
+            <button class="btn btn-primary" onclick="exportTransactions()">
+                <i class="fas fa-download me-2"></i>Exporter
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h6 class="mb-3">Filtrer par statut :</h6>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('admin.admin_transactions') }}" 
+               class="filter-badge badge {% if not request.args.get('statut') %}active{% endif %} bg-secondary">
+                Toutes ({{ transactions|length }})
+            </a>
+            <a href="{{ url_for('admin.admin_transactions', statut='en_attente') }}" 
+               class="filter-badge badge {% if request.args.get('statut') == 'en_attente' %}active{% endif %} bg-warning">
+                En attente
+            </a>
+            <a href="{{ url_for('admin.admin_transactions', statut='valide') }}" 
+               class="filter-badge badge {% if request.args.get('statut') == 'valide' %}active{% endif %} bg-info">
+                Validées
+            </a>
+            <a href="{{ url_for('admin.admin_transactions', statut='complete') }}" 
+               class="filter-badge badge {% if request.args.get('statut') == 'complete' %}active{% endif %} bg-success">
+                Complétées
+            </a>
+            <a href="{{ url_for('admin.admin_transactions', statut='rejete') }}" 
+               class="filter-badge badge {% if request.args.get('statut') == 'rejete' %}active{% endif %} bg-danger">
+                Rejetées
+            </a>
+        </div>
+        
+        <!-- Filtres avancés -->
+        <div class="row mt-3">
+            <div class="col-md-3">
+                <input type="date" class="form-control form-control-sm" id="filter-date" placeholder="Date">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select form-select-sm" id="filter-type">
+                    <option value="">Tous types</option>
+                    <option value="achat">Achat</option>
+                    <option value="vente">Vente</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select form-select-sm" id="filter-reseau">
+                    <option value="">Tous réseaux</option>
+                    <option value="TRC20">TRC20</option>
+                    <option value="ETHEREUM">Ethereum</option>
+                    <option value="SOL">Solana</option>
+                    <option value="USDT_TON">USDT_TON</option>
+                    <option value="USDT_APTOS">USDT_APTOS</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-sm btn-outline-primary w-100" onclick="applyFilters()">
+                    <i class="fas fa-filter me-1"></i>Filtrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des transactions -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="transactions-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Utilisateur</th>
+                        <th>Type</th>
+                        <th>Montant</th>
+                        <th>Réseau</th>
+                        <th>Date</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr class="transaction-row" 
+                        data-type="{{ transaction.type_transaction }}"
+                        data-reseau="{{ transaction.reseau }}"
+                        data-date="{{ transaction.date_creation.strftime('%Y-%m-%d') }}">
+                        <td>{{ loop.index }}</td>
+                        <td>
+                            <strong>{{ transaction.utilisateur.nom }}</strong><br>
+                            <small class="text-muted">{{ transaction.utilisateur.telephone }}</small>
+                        </td>
+                        <td>
+                            {% if transaction.type_transaction == 'achat' %}
+                            <span class="badge bg-primary">Achat</span>
+                            {% else %}
+                            <span class="badge bg-success">Vente</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transaction.type_transaction == 'achat' %}
+                            <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong><br>
+                            <small>{{ transaction.montant_usdt }} USDT</small><br>
+                            <small>{{ transaction.adresse_wallet }}</small>
+                            {% else %}
+                            <strong>{{ transaction.montant_usdt }} USDT</strong><br>
+                            <small>{{ formater_montant(transaction.montant_xaf) }} XAF</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ transaction.reseau }}</td>
+                        <td>{{ transaction.date_creation.strftime('%d/%m %H:%M') }}</td>
+                        <td>
+                            <span class="status-badge status-{{ transaction.statut }}">
+                                {{ transaction.statut.replace('_', ' ') }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="showTransactionDetails('{{ transaction.identifiant_transaction }}')"
+                                        title="Détails">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                {% if transaction.statut == 'en_attente' %}
+                                <button class="btn btn-sm btn-outline-success" 
+                                        onclick="validateTransaction('{{ transaction.identifiant_transaction }}')"
+                                        title="Valider">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="showRejectModal('{{ transaction.identifiant_transaction }}')"
+                                        title="Rejeter">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Aucune transaction trouvée</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal des détails -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de la transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="transaction-details-content">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de rejet -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Rejeter la transaction</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="rejectForm">
+                <input type="hidden" id="reject_transaction_id" name="transaction_id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="motif_rejet" class="form-label">Motif du rejet *</label>
+                        <textarea class="form-control" id="motif_rejet" name="motif" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-danger">Rejeter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Afficher les détails d'une transaction
+function showTransactionDetails(transactionId) {
+    fetch(`/admin/transaction/${transactionId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('transaction-details-content').innerHTML = data.html;
+                new bootstrap.Modal(document.getElementById('detailsModal')).show();
+            }
+        });
+}
+
+// Valider une transaction
+function validateTransaction(transactionId) {
+    if (confirm('Valider cette transaction ?')) {
+        fetch(`/admin/transaction/${transactionId}/validate`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Transaction validée avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        });
+    }
+}
+
+// Afficher le modal de rejet
+function showRejectModal(transactionId) {
+    document.getElementById('reject_transaction_id').value = transactionId;
+    new bootstrap.Modal(document.getElementById('rejectModal')).show();
+}
+
+// Soumission du formulaire de rejet
+document.getElementById('rejectForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const transactionId = document.getElementById('reject_transaction_id').value;
+    const formData = new FormData(this);
+    
+    fetch(`/admin/transaction/${transactionId}/reject`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Transaction rejetée !');
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    });
+});
+
+// Appliquer les filtres
+function applyFilters() {
+    const dateFilter = document.getElementById('filter-date').value;
+    const typeFilter = document.getElementById('filter-type').value;
+    const reseauFilter = document.getElementById('filter-reseau').value;
+    
+    const rows = document.querySelectorAll('.transaction-row');
+    
+    rows.forEach(row => {
+        let show = true;
+        
+        if (dateFilter && row.getAttribute('data-date') !== dateFilter) {
+            show = false;
+        }
+        
+        if (typeFilter && row.getAttribute('data-type') !== typeFilter) {
+            show = false;
+        }
+        
+        if (reseauFilter && row.getAttribute('data-reseau') !== reseauFilter) {
+            show = false;
+        }
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+// Exporter les transactions
+function exportTransactions() {
+    const table = document.getElementById('transactions-table');
+    let csv = [];
+    
+    // Headers
+    const headers = [];
+    table.querySelectorAll('thead th').forEach(th => {
+        headers.push(th.textContent.trim());
+    });
+    csv.push(headers.join(','));
+    
+    // Rows
+    table.querySelectorAll('tbody tr').forEach(row => {
+        if (row.style.display !== 'none') {
+            const rowData = [];
+            row.querySelectorAll('td').forEach((td, index) => {
+                if (index !== 7) { // Exclure la colonne Actions
+                    rowData.push(td.textContent.trim().replace(/,/g, ''));
+                }
+            });
+            csv.push(rowData.join(','));
+        }
+    });
+    
+    // Télécharger
+    const csvContent = csv.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Activer les tooltips
+    const tooltips = document.querySelectorAll('[title]');
+    tooltips.forEach(el => {
+        new bootstrap.Tooltip(el);
+    });
+});
+</script>
+{% endblock %}
