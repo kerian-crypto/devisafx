@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-from datetime import datetime
+from datetime import datetime, date
 import uuid
 
 db = SQLAlchemy()
@@ -23,6 +23,12 @@ class Utilisateur(UserMixin, db.Model):
     est_actif = db.Column(db.Boolean, default=True)
     
     transactions = db.relationship('Transaction', backref='utilisateur', lazy=True)
+    notifications_envoyees = db.relationship(
+        'Notification', foreign_keys='Notification.admin_id', backref='admin', lazy=True
+    )
+    notifications_reçues = db.relationship(
+        'Notification', foreign_keys='Notification.utilisateur_id', backref='destinataire', lazy=True
+    )
 
 class Transaction(db.Model):
     __tablename__ = 'transactions'
@@ -30,19 +36,24 @@ class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     identifiant_transaction = db.Column(db.String(36), unique=True, default=lambda: str(uuid.uuid4()))
     utilisateur_id = db.Column(db.Integer, db.ForeignKey('utilisateurs.id'), nullable=False)
-    type_transaction = db.Column(db.Enum('achat', 'vente'), nullable=False)
+    type_transaction = db.Column(
+        db.Enum('achat', 'vente', name='type_transaction_enum'),
+        nullable=False
+    )
     montant_xaf = db.Column(db.Float, nullable=False)
     montant_usdt = db.Column(db.Float, nullable=False)
     reseau = db.Column(db.String(50), nullable=False)  # TRC20, USDT_TON, etc.
     adresse_wallet = db.Column(db.String(200))
     operateur_mobile = db.Column(db.String(50))
     numero_marchand = db.Column(db.String(20))
-    statut = db.Column(db.Enum('en_attente', 'valide', 'rejete', 'complete'), default='en_attente')
+    statut = db.Column(
+        db.Enum('en_attente', 'valide', 'rejete', 'complete', name='statut_enum'),
+        default='en_attente'
+    )
     motif_rejet = db.Column(db.Text)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
     date_validation = db.Column(db.DateTime)
     
-    # Informations de paiement
     preuve_paiement = db.Column(db.String(200))  # Chemin vers l'image
     reference_paiement = db.Column(db.String(100))
     
@@ -55,7 +66,10 @@ class PortefeuilleAdmin(db.Model):
     reseau = db.Column(db.String(50), nullable=False)
     adresse = db.Column(db.String(200), nullable=False)
     pays = db.Column(db.String(50))
-    type_portefeuille = db.Column(db.Enum('crypto', 'mobile_money'), nullable=False)
+    type_portefeuille = db.Column(
+        db.Enum('crypto', 'mobile_money', name='type_portefeuille_enum'),
+        nullable=False
+    )
     est_actif = db.Column(db.Boolean, default=True)
     date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -63,9 +77,9 @@ class TauxJournalier(db.Model):
     __tablename__ = 'taux_journaliers'
     
     id = db.Column(db.Integer, primary_key=True)
-    taux_achat = db.Column(db.Float, nullable=False)  # Taux d'achat USDT (nous achetons)
-    taux_vente = db.Column(db.Float, nullable=False)   # Taux de vente USDT (nous vendons)
-    date = db.Column(db.Date, unique=True, default=datetime.utcnow().date)
+    taux_achat = db.Column(db.Float, nullable=False)
+    taux_vente = db.Column(db.Float, nullable=False)
+    date = db.Column(db.Date, unique=True, default=date.today)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Notification(db.Model):
