@@ -10,7 +10,6 @@ from models import db, Utilisateur
 from routes import main_bp, admin_bp
 from auth import auth_bp
 
-db = SQLAlchemy()
 migrate = Migrate()
 
 
@@ -50,6 +49,7 @@ def health_check():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
