@@ -80,7 +80,7 @@ def google_callback():
     nom = userinfo.get("name", "Utilisateur Google")
 
         
-          utilisateur = Utilisateur.query.filter_by(email=email).first()
+    utilisateur = Utilisateur.query.filter_by(email=email).first()
 
     if not utilisateur:
         utilisateur = Utilisateur(
@@ -113,3 +113,4 @@ def logout():
     logout_user()
     flash("Déconnexion réussie.", "info")
     return redirect(url_for("main.index"))
+
