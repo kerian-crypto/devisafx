@@ -12,7 +12,6 @@ auth_bp = Blueprint("auth", __name__)
 client = WebApplicationClient(Config.GOOGLE_CLIENT_ID)
 
 
-
 @auth_bp.route("/login/google")
 def login_google():
     google_provider_cfg = get_google_provider_cfg()
@@ -27,14 +26,15 @@ def login_google():
         ),
         scope=["openid", "email", "profile"],
     )
-
     return redirect(request_uri)
+
+
 @auth_bp.route("/login/google/callback")
 def google_callback():
     code = request.args.get("code")
 
     if not code:
-        flash("Authentification Google échouée.", "error")
+        flash("Erreur Google OAuth.", "error")
         return redirect(url_for("main.index"))
 
     google_provider_cfg = get_google_provider_cfg()
@@ -67,19 +67,17 @@ def google_callback():
 
     userinfo_endpoint = google_provider_cfg["userinfo_endpoint"]
     uri, headers, body = client.add_token(userinfo_endpoint)
-
     userinfo_response = requests.get(uri, headers=headers)
     userinfo = userinfo_response.json()
 
     if not userinfo.get("email_verified"):
-        flash("Email Google non vérifié.", "error")
+        flash("Email non vérifié.", "error")
         return redirect(url_for("main.index"))
 
     google_id = userinfo["sub"]
     email = userinfo["email"]
     nom = userinfo.get("name", "Utilisateur Google")
 
-        
     utilisateur = Utilisateur.query.filter_by(email=email).first()
 
     if not utilisateur:
@@ -96,16 +94,8 @@ def google_callback():
 
     login_user(utilisateur)
     flash("Connexion Google réussie.", "success")
-    return redirect(url_for("main.dashboard"))
+    return redirect(url_for("dashboard"))
 
-    else:
-        flash('Email non vérifié par Google.', 'error')
-        return redirect(url_for('main.login'))
-
-def get_google_provider_cfg():
-    """Récupère la configuration OAuth de Google"""
-    import requests
-    return requests.get(Config.GOOGLE_DISCOVERY_URL).json()
 
 @auth_bp.route("/logout")
 @login_required
@@ -114,3 +104,8 @@ def logout():
     flash("Déconnexion réussie.", "info")
     return redirect(url_for("main.index"))
 
+
+def get_google_provider_cfg():
+    return requests.get(
+        Config.GOOGLE_DISCOVERY_URL
+    ).json()
