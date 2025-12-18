@@ -3,7 +3,6 @@ from models import db, Utilisateur
 import hashlib
 import os
 
-db.init_app(app)
 
 with app.app_context():
     if not Utilisateur.query.filter_by(est_admin=True).first():
