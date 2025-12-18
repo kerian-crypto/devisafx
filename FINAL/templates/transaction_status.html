@@ -73,8 +73,8 @@
                 
                 <!-- Progression de la transaction -->
                 <div class="progress-tracker">
-                    {% set steps = ['initiee', 'en_attente', 'valide', 'complete'] %}
-                    {% set step_labels = ['Initée', 'En attente', 'Validée', 'Complétée'] %}
+                    {% set steps = ['initiee', 'en_attente','rejete', 'valide', 'complete'] %}
+                    {% set step_labels = ['Initée', 'En attente','rejete', 'Validée', 'Complétée'] %}
                     {% set step_icons = ['fa-file-alt', 'fa-clock', 'fa-check-circle', 'fa-check-double'] %}
                     
                     {% for i in range(4) %}
@@ -408,4 +408,5 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
     });
 });
 </script>
+
 {% endblock %}
