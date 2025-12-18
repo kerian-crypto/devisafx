@@ -94,7 +94,7 @@ def google_callback():
 
     login_user(utilisateur)
     flash("Connexion Google réussie.", "success")
-    return redirect(url_for("dashboard"))
+    return redirect(url_for("main.dashboard"))
 
 
 @auth_bp.route("/logout")
@@ -109,3 +109,4 @@ def get_google_provider_cfg():
     return requests.get(
         Config.GOOGLE_DISCOVERY_URL
     ).json()
+
