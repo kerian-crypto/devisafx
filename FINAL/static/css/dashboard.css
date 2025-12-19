@@ -1,0 +1,589 @@
+/* =================================
+   DEVISA-FX - Dashboard Styles
+   Palette: Noir, Bleu-Ciel, Or
+   ================================= */
+
+/* === Dashboard Header === */
+.dashboard-header {
+    background: var(--gradient-card);
+    padding: 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+}
+
+.dashboard-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.user-welcome {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: var(--gradient-bleu-or);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.user-balance {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--or);
+    text-shadow: var(--glow-or);
+    position: relative;
+    z-index: 1;
+}
+
+/* === Quick Actions === */
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.quick-action-btn {
+    background: var(--gradient-card);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.4s ease;
+    position: relative;
+    overflow: hidden;
+    display: block;
+}
+
+.quick-action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.quick-action-btn:hover::before {
+    left: 100%;
+}
+
+.quick-action-btn:hover {
+    transform: translateY(-10px) scale(1.02);
+    border-color: var(--bleu-ciel);
+    box-shadow: var(--shadow-bleu);
+}
+
+.quick-action-btn i {
+    color: var(--or);
+    margin-bottom: 1rem;
+    display: block;
+    filter: drop-shadow(var(--glow-or));
+    transition: all 0.3s ease;
+}
+
+.quick-action-btn:hover i {
+    transform: scale(1.2) rotate(5deg);
+    color: var(--or-clair);
+}
+
+.quick-action-btn h5 {
+    color: var(--bleu-ciel);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.quick-action-btn p {
+    color: var(--gris-moyen);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* === Recent Transactions === */
+.recent-transactions {
+    background: var(--gradient-card);
+    padding: 2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    box-shadow: var(--shadow-card);
+}
+
+.recent-transactions h4 {
+    color: var(--or);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    position: relative;
+    padding-bottom: 0.75rem;
+}
+
+.recent-transactions h4::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 60px;
+    height: 3px;
+    background: var(--gradient-bleu-or);
+    border-radius: 2px;
+}
+
+/* === Status Badges === */
+.status-badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: capitalize;
+}
+
+.status-en_attente {
+    background: rgba(255, 193, 7, 0.2);
+    color: var(--or);
+    border: 1px solid var(--or);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.status-valide {
+    background: rgba(0, 212, 255, 0.2);
+    color: var(--bleu-ciel);
+    border: 1px solid var(--bleu-ciel);
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.status-complete {
+    background: rgba(0, 212, 161, 0.2);
+    color: #00ffb7;
+    border: 1px solid #00d4a1;
+    box-shadow: 0 0 10px rgba(0, 212, 161, 0.3);
+}
+
+.status-rejete {
+    background: rgba(255, 71, 87, 0.2);
+    color: #ff6b81;
+    border: 1px solid #ff4757;
+    box-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+}
+
+/* === Action Buttons === */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.action-buttons .btn {
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+}
+
+.btn-outline-primary {
+    border: 1px solid var(--bleu-ciel) !important;
+    color: var(--bleu-ciel) !important;
+    background: transparent !important;
+}
+
+.btn-outline-primary:hover {
+    background: var(--bleu-ciel) !important;
+    color: var(--noir-profond) !important;
+    box-shadow: var(--glow-bleu);
+}
+
+.btn-outline-success {
+    border: 1px solid #00d4a1 !important;
+    color: #00ffb7 !important;
+    background: transparent !important;
+}
+
+.btn-outline-success:hover {
+    background: #00d4a1 !important;
+    color: var(--noir-profond) !important;
+    box-shadow: 0 0 10px rgba(0, 212, 161, 0.5);
+}
+
+.btn-outline-danger {
+    border: 1px solid #ff4757 !important;
+    color: #ff6b81 !important;
+    background: transparent !important;
+}
+
+.btn-outline-danger:hover {
+    background: #ff4757 !important;
+    color: white !important;
+    box-shadow: 0 0 10px rgba(255, 71, 87, 0.5);
+}
+
+/* === Filter Badges === */
+.filter-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+    border: 1px solid transparent;
+}
+
+.filter-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.filter-badge.active {
+    border-color: var(--bleu-ciel);
+    box-shadow: var(--glow-bleu);
+}
+
+/* === Transaction Details === */
+.transaction-details {
+    background: rgba(0, 212, 255, 0.05);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
+/* === Stats Cards === */
+.stats-card {
+    background: var(--gradient-card);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-card);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--bleu-ciel);
+    box-shadow: var(--shadow-bleu);
+}
+
+.stats-card h6 {
+    color: var(--gris-moyen);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.stats-card .stats-value {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--or);
+    text-shadow: var(--glow-or);
+    position: relative;
+    z-index: 1;
+}
+
+.stats-card .stats-trend {
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.stats-trend.up {
+    color: #00ffb7;
+}
+
+.stats-trend.down {
+    color: #ff6b81;
+}
+
+/* === Network Badge === */
+.network-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid var(--bleu-ciel);
+    border-radius: 20px;
+    color: var(--bleu-ciel);
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.network-badge i {
+    color: var(--or);
+}
+
+/* === Progress Bar === */
+.progress {
+    height: 8px;
+    border-radius: 10px;
+    background: var(--noir-hover);
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: var(--gradient-bleu-or);
+    box-shadow: var(--glow-bleu);
+    transition: width 0.6s ease;
+}
+
+/* === Timeline === */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--gradient-bleu-or);
+}
+
+.timeline-item {
+    position: relative;
+    padding-bottom: 2rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.4rem;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--or);
+    box-shadow: var(--glow-or);
+    border: 2px solid var(--noir-profond);
+}
+
+.timeline-content {
+    background: var(--noir-card);
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.timeline-time {
+    color: var(--gris-moyen);
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+/* === Info Box === */
+.info-box {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 215, 0, 0.1) 100%);
+    border: 1px solid;
+    border-image: var(--gradient-bleu-or) 1;
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.info-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--gradient-bleu-or);
+}
+
+.info-box-icon {
+    font-size: 2rem;
+    color: var(--or);
+    margin-bottom: 1rem;
+    display: block;
+    filter: drop-shadow(var(--glow-or));
+}
+
+.info-box h6 {
+    color: var(--bleu-ciel);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.info-box p {
+    color: var(--gris-clair);
+    margin: 0;
+}
+
+/* === Empty State === */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    color: var(--gris-moyen);
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+}
+
+.empty-state h5 {
+    color: var(--gris-clair);
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: var(--gris-moyen);
+    margin-bottom: 1.5rem;
+}
+
+/* === Loading Spinner === */
+.spinner-border {
+    border-color: var(--bleu-ciel);
+    border-right-color: transparent;
+}
+
+.spinner-grow {
+    background-color: var(--or);
+}
+
+/* === Tooltips === */
+.tooltip-inner {
+    background: var(--noir-card);
+    border: 1px solid var(--bleu-ciel);
+    color: var(--gris-clair);
+    box-shadow: var(--shadow-card);
+}
+
+.tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: var(--bleu-ciel);
+}
+
+.tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: var(--bleu-ciel);
+}
+
+/* === Admin Panel Specific === */
+.admin-sidebar {
+    background: var(--gradient-card);
+    border-right: 1px solid rgba(0, 212, 255, 0.2);
+    min-height: calc(100vh - 76px);
+    padding: 2rem 1rem;
+}
+
+.admin-sidebar .nav-link {
+    color: var(--gris-clair) !important;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.admin-sidebar .nav-link:hover,
+.admin-sidebar .nav-link.active {
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--bleu-ciel) !important;
+    border-left: 3px solid var(--or);
+    padding-left: calc(1rem - 3px);
+}
+
+.admin-sidebar .nav-link i {
+    color: var(--or);
+}
+
+/* === Responsive Dashboard === */
+@media (max-width: 992px) {
+    .quick-actions {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-welcome {
+        font-size: 2rem;
+    }
+    
+    .user-balance {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-header {
+        padding: 1.5rem;
+    }
+    
+    .quick-action-btn {
+        padding: 1.5rem;
+    }
+    
+    .recent-transactions {
+        padding: 1.5rem;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons .btn {
+        width: 100%;
+    }
+}
+
+/* === Animation pour les cartes === */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-in {
+    animation: slideInUp 0.6s ease-out;
+}
+
+/* === Effet de brillance sur les éléments en or === */
+@keyframes shine {
+    0% {
+        filter: brightness(1);
+    }
+    50% {
+        filter: brightness(1.3);
+    }
+    100% {
+        filter: brightness(1);
+    }
+}
+
+.shine-effect {
+    animation: shine 3s ease-in-out infinite;
+}
