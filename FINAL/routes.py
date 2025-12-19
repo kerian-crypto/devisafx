@@ -20,6 +20,13 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 @main_bp.route('/')
 def index():
+    if current_user.is_authenticated:
+        if current_user.est_admin:
+            flash('Bienvenu Admin.', 'sucess')
+            return redirect(url_for('main.admin_dashboard'))
+    
+        return redirect(url_for('main.dashboard'))
+    
     """Page d'accueil"""
     return render_template('index.html')
 
