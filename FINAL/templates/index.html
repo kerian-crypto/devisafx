@@ -15,10 +15,12 @@
             <a href="{{ url_for('main.register') }}" class="btn btn-light btn-lg me-3">
                 <i class="fas fa-user-plus"></i> Commencer maintenant
             </a>
-    
-            <a href="{{ url_for('main.calculate') }}" class="btn btn-outline-light btn-lg">
-                <i class="fas fa-calculator"></i> Calculer un taux
-            </a>
+            {% if current_user.est_admin %}
+            
+                <a href="{{ url_for('main.calculate') }}" class="btn btn-outline-light btn-lg">
+                    <i class="fas fa-calculator"></i> Calculer un taux
+                </a>
+            {% endif %}
         </div>
     </div>
 </section>
@@ -212,3 +214,4 @@
 </section>
 
 {% endblock %}
+
