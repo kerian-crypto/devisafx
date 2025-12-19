@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Page d'accueil -->
+  <url>
+    <loc>https://devisafx.com/</loc>
+    <lastmod>2025-12-19T10:14:41+00:00</lastmod>
+    <priority>1.00</priority>
+    <changefreq>daily</changefreq>
+  </url>
+
+  <!-- Calculateur de taux -->
+  <url>
+    <loc>https://devisafx.com/calculate</loc>
+    <lastmod>2025-12-19T10:14:41+00:00</lastmod>
+    <priority>0.90</priority>
+    <changefreq>daily</changefreq>
+  </url>
+
+  <!-- Inscription -->
+  <url>
+    <loc>https://devisafx.com/register</loc>
+    <lastmod>2025-12-19T10:14:41+00:00</lastmod>
+    <priority>0.85</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- Connexion -->
+  <url>
+    <loc>https://devisafx.com/login</loc>
+    <lastmod>2025-12-19T10:14:41+00:00</lastmod>
+    <priority>0.80</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- OAuth Google (si accessible publiquement) -->
+  <url>
+    <loc>https://devisafx.com/login/google</loc>
+    <lastmod>2025-12-19T10:14:41+00:00</lastmod>
+    <priority>0.50</priority>
+    <changefreq>monthly</changefreq>
+  </url>
+
+  <!-- À AJOUTER si vous créez ces pages -->
+  <!--
+  <url>
+    <loc>https://devisafx.com/conditions</loc>
+    <lastmod>2025-12-19T10:14:41+00:00</lastmod>
+    <priority>0.40</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+
+  <url>
+    <loc>https://devisafx.com/politique-confidentialite</loc>
+    <lastmod>2025-12-19T10:14:41+00:00</lastmod>
+    <priority>0.40</priority>
+    <changefreq>yearly</changefreq>
+  </url>
+  -->
+
+</urlset>
