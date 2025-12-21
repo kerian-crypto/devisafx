@@ -1,84 +1,92 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
-from flask_login import login_required, current_user, logout_user
-from flask_mail import Message
+from flask_login import login_required, current_user, logout_user, login_user
 from datetime import datetime, date
 import uuid
 import os
 
 from models import db, Utilisateur, Transaction, PortefeuilleAdmin, TauxJournalier, Notification
-from forms import FormulaireInscription, FormulaireConnexion, FormulaireAchat, FormulaireVente, FormulaireCalculTaux
+from forms import FormulaireInscription, FormulaireConnexion, FormulaireAchat, FormulaireVente, FormulaireCalculTaux, FormulaireTaux
 from utils import calculer_taux_vente_usdt, calculer_taux_achat_usdt, generer_numero_marchand, formater_montant
 from auth import auth_bp
 from config import Config
 
 main_bp = Blueprint('main', __name__)
+
+
+from itsdangerous import SignatureExpired, BadSignature
+import hashlib
+
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 @main_bp.route('/')
 def index():
     """Page d'accueil"""
-    if current_user.is_authenticated:
-        if current_user.est_admin:
-            return redirect(url_for('admin.admin_dashboard'))
-        return redirect(url_for('main.dashboard'))
     return render_template('index.html')
 
+# Modifier la route register pour envoyer l'email de vérification
 @main_bp.route('/register', methods=['GET', 'POST'])
 def register():
     """Inscription"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     
-    formulaire = FormulaireInscription()
+    form = FormulaireInscription()
     
-    if formulaire.validate_on_submit():
+    if form.validate_on_submit():
         # Vérifier si l'email existe déjà
-        if Utilisateur.query.filter_by(email=formulaire.email.data).first():
+        if Utilisateur.query.filter_by(email=form.email.data).first():
             flash('Cet email est déjà utilisé.', 'error')
-            return redirect(url_for('register'))
+            return redirect(url_for('main.register'))
         
         # Vérifier si le téléphone existe déjà
-        if Utilisateur.query.filter_by(telephone=formulaire.telephone.data).first():
+        if Utilisateur.query.filter_by(telephone=form.telephone.data).first():
             flash('Ce numéro de téléphone est déjà utilisé.', 'error')
-            return redirect(url_for('register'))
+            return redirect(url_for('main.register'))
         
         # Créer l'utilisateur
         utilisateur = Utilisateur(
-            nom=formulaire.nom.data,
-            telephone=formulaire.telephone.data,
-            email=formulaire.email.data,
-            pays=formulaire.pays.data,
-            mot_de_passe_hash=formulaire.mot_de_passe.data  # À hasher en production
+            nom=form.nom.data,
+            telephone=form.telephone.data,
+            email=form.email.data,
+            pays=form.pays.data,
+            mot_de_passe_hash=hashlib.sha256(form.mot_de_passe.data.encode()).hexdigest()
         )
         
         db.session.add(utilisateur)
         db.session.commit()
-        
-        flash('Inscription réussie! Veuillez vous connecter.', 'success')
-        return redirect(url_for('login'))
     
-    return render_template('register.html', formulaire=formulaire)
+    return render_template('register.html', form=form)
+    
 
+
+# Ajouter une vérification dans la route login
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Connexion"""
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('main.dashboard'))
     
-    formulaire = FormulaireConnexion()
+    form = FormulaireConnexion()
     
-    if formulaire.validate_on_submit():
-        utilisateur = Utilisateur.query.filter_by(email=formulaire.email.data).first()
+    if form.validate_on_submit():
+        utilisateur = Utilisateur.query.filter_by(email=form.email.data).first()
         
-        if utilisateur and utilisateur.mot_de_passe_hash == formulaire.mot_de_passe.data:
+        # Vérifier le mot de passe (en production, utiliser bcrypt)
+        mot_de_passe_hash = hashlib.sha256(form.mot_de_passe.data.encode()).hexdigest()
+
+        if utilisateur and utilisateur.mot_de_passe_hash == mot_de_passe_hash:
+            if utilisateur.est_admin==True:
+                login_user(utilisateur)
+                flash('Connexion réussie en tant qu\'administrateur!', 'success')
+                return redirect(url_for('admin.admin_dashboard'))
             login_user(utilisateur)
             flash('Connexion réussie!', 'success')
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
+            return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
         else:
             flash('Email ou mot de passe incorrect.', 'error')
     
-    return render_template('login.html', formulaire=formulaire)
+    return render_template('login.html', form=form)
 
 @main_bp.route('/dashboard')
 @login_required
@@ -100,27 +108,23 @@ def dashboard():
 @login_required
 def buy():
     """Achat de USDT"""
-    formulaire = FormulaireAchat()
     
-    taux_du_jour = TauxJournalier.query.order_by(TauxJournalier.date.desc()).first()
-    taux_vente = taux_du_jour.taux_vente if taux_du_jour else Config.DEFAULT_USDT_RATE
+    # Vérifier si les taux sont définis pour aujourd'hui
+    taux_du_jour = TauxJournalier.query.filter_by(date=date.today()).first()
+    if not taux_du_jour:
+        flash('Les taux du jour ne sont pas encore définis. Veuillez réessayer plus tard.', 'error')
+        return redirect(url_for('main.dashboard'))
     
-    if formulaire.validate_on_submit():
+    form = FormulaireAchat()
+    taux_vente = taux_du_jour.taux_vente
+    
+    if form.validate_on_submit():
         # Calculer le montant en USDT
-        montant_xaf = formulaire.montant_xaf.data
-        taux_final = taux_vente * (1 + Config.PROFIT_MARGIN)
-        montant_usdt = montant_xaf / taux_final
+        montant_xaf = form.montant_xaf.data
+        montant_usdt = montant_xaf / taux_vente
         
-        # Sélectionner un portefeuille mobile money admin actif
-        portefeuille_mobile = PortefeuilleAdmin.query.filter_by(
-            type_portefeuille='mobile_money',
-            pays=current_user.pays,
-            est_actif=True
-        ).first()
-        
-        if not portefeuille_mobile:
-            flash("Aucun portefeuille admin disponible pour le moment", "error")
-            return redirect(url_for('main.buy'))
+        # Générer un numéro marchand
+        numero_marchand = generer_numero_marchand(current_user.pays, form.operateur_mobile.data)
         
         # Créer la transaction
         transaction = Transaction(
@@ -128,19 +132,21 @@ def buy():
             type_transaction='achat',
             montant_xaf=montant_xaf,
             montant_usdt=round(montant_usdt, 2),
-            reseau=formulaire.reseau.data,
-            adresse_wallet_utilisateur=formulaire.adresse_wallet.data,
-            portefeuille_admin_mobile_id=portefeuille_mobile.id,
-            taux_applique=taux_final,
+            reseau=form.reseau.data,
+            adresse_wallet=form.adresse_wallet.data,
+            operateur_mobile=form.operateur_mobile.data,
+            numero_marchand=numero_marchand,
+            taux_applique=taux_vente,
             statut='en_attente'
         )
         
         db.session.add(transaction)
         db.session.commit()
+
         
-        # Notification pour l'admin
+        # Créer une notification pour l'admin
         notification = Notification(
-            admin_id=1,
+            admin_id=1,  # ID de l'admin principal
             type_notification='nouvelle_transaction',
             message=f"Nouvelle transaction d'achat: {montant_xaf} XAF par {current_user.nom}"
         )
@@ -149,33 +155,30 @@ def buy():
         
         return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
     
-    return render_template('buy.html', formulaire=formulaire, taux_vente=taux_vente)
+    return render_template('buy.html', 
+                         form=form,
+                         taux_vente=taux_vente)
 
 @main_bp.route('/sell', methods=['GET', 'POST'])
 @login_required
 def sell():
     """Vente de USDT"""
-    formulaire = FormulaireVente()
+    # Vérifier si les taux sont définis pour aujourd'hui
+    taux_du_jour = TauxJournalier.query.filter_by(date=date.today()).first()
+    if not taux_du_jour:
+        flash('Les taux du jour ne sont pas encore définis. Veuillez réessayer plus tard.', 'error')
+        return redirect(url_for('main.dashboard'))
     
-    taux_du_jour = TauxJournalier.query.order_by(TauxJournalier.date.desc()).first()
-    taux_achat = taux_du_jour.taux_achat if taux_du_jour else Config.DEFAULT_USDT_RATE
+    form = FormulaireVente()
+    taux_achat = taux_du_jour.taux_achat
     
-    if formulaire.validate_on_submit():
+    if form.validate_on_submit():
         # Calculer le montant en XAF
-        montant_usdt = formulaire.montant_usdt.data
-        taux_final = taux_achat * (1 - Config.PROFIT_MARGIN)
-        montant_xaf = montant_usdt * taux_final
+        montant_usdt = form.montant_usdt.data
+        montant_xaf = montant_usdt * taux_achat
         
-        # Sélectionner un portefeuille crypto admin actif pour ce réseau
-        portefeuille_crypto = PortefeuilleAdmin.query.filter_by(
-            type_portefeuille='crypto',
-            reseau=formulaire.reseau.data,
-            est_actif=True
-        ).first()
-        
-        if not portefeuille_crypto:
-            flash("Aucun portefeuille admin disponible pour ce réseau", "error")
-            return redirect(url_for('main.sell'))
+        # Générer un numéro marchand pour le virement
+        numero_marchand = generer_numero_marchand(current_user.pays, form.operateur_mobile.data)
         
         # Créer la transaction
         transaction = Transaction(
@@ -183,19 +186,20 @@ def sell():
             type_transaction='vente',
             montant_xaf=round(montant_xaf, 2),
             montant_usdt=montant_usdt,
-            reseau=formulaire.reseau.data,
-            numero_mobile_utilisateur=formulaire.numero_mobile.data,
-            portefeuille_admin_crypto_id=portefeuille_crypto.id,
-            taux_applique=taux_final,
+            reseau=form.reseau.data,
+            adresse_wallet=form.adresse_wallet.data,
+            operateur_mobile=form.operateur_mobile.data,
+            numero_marchand=numero_marchand,
+            taux_applique=taux_achat,
             statut='en_attente'
         )
         
         db.session.add(transaction)
         db.session.commit()
         
-        # Notification pour l'admin
+        # Créer une notification pour l'admin
         notification = Notification(
-            admin_id=1,
+            admin_id=1,  # ID de l'admin principal
             type_notification='nouvelle_transaction',
             message=f"Nouvelle transaction de vente: {montant_usdt} USDT par {current_user.nom}"
         )
@@ -204,7 +208,10 @@ def sell():
         
         return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
     
-    return render_template('sell.html', formulaire=formulaire, taux_achat=taux_achat)
+    return render_template('sell.html', 
+                         form=form,
+                         taux_achat=taux_achat)
+
 @main_bp.route('/transaction/<transaction_id>')
 @login_required
 def transaction_status(transaction_id):
@@ -221,26 +228,26 @@ def transaction_status(transaction_id):
 @main_bp.route('/calculate', methods=['GET', 'POST'])
 def calculate():
     """Calculateur de taux"""
-    formulaire = FormulaireCalculTaux()
+    form = FormulaireCalculTaux()
     resultat = None
     erreur = None
     
-    if formulaire.validate_on_submit():
-        if formulaire.type_calcul.data == 'vente':
+    if form.validate_on_submit():
+        if form.type_calcul.data == 'vente':
             resultat, erreur = calculer_taux_vente_usdt(
-                formulaire.taux_mondial.data,
-                formulaire.benefice.data,
-                formulaire.montant.data
+                form.taux_mondial.data,
+                form.benefice.data,
+                form.montant.data
             )
         else:
             resultat, erreur = calculer_taux_achat_usdt(
-                formulaire.taux_mondial.data,
-                formulaire.benefice.data,
-                formulaire.montant.data
+                form.taux_mondial.data,
+                form.benefice.data,
+                form.montant.data
             )
     
     return render_template('calculate.html', 
-                         formulaire=formulaire,
+                         form=form,
                          resultat=resultat,
                          erreur=erreur)
 
@@ -286,6 +293,7 @@ def admin_dashboard():
         admin_id=current_user.id,
         est_lue=False
     ).order_by(Notification.date_creation.desc()).all()
+    print(dernieres_transactions)
     
     return render_template('admin_dashboard.html',
                          total_utilisateurs=total_utilisateurs,
@@ -386,55 +394,47 @@ def admin_wallets():
     
     return render_template('admin_wallets.html', portefeuilles=portefeuilles)
 
-@admin_bp.route('/wallets/add', methods=['GET', 'POST'])
+@admin_bp.route('/wallet/add', methods=['POST'])
 @login_required
-def wallets():
-    """Gestion des portefeuilles admin"""
-    if request.method == 'POST':
-        reseau = request.form.get('reseau')
-        adresse = request.form.get('adresse')
-        pays = request.form.get('pays')
-        type_portefeuille = request.form.get('type_portefeuille')
-        
-        portefeuille = PortefeuilleAdmin(
-            reseau=reseau,
-            adresse=adresse,
-            pays=pays,
-            type_portefeuille=type_portefeuille
-        )
-        
-        db.session.add(portefeuille)
-        db.session.commit()
-        flash("Portefeuille ajouté avec succès", "success")
-        return redirect(url_for('admin.admin_wallets'))
-    
-    portefeuilles = PortefeuilleAdmin.query.all()
-    return render_template('admin_wallets.html', portefeuilles=portefeuilles)
-
-@admin_bp.route('/admin/wallet/<int:id>/toggle', methods=['POST'])
-@login_required
-def toggle_portefeuille(id):
-    """Activer/désactiver un portefeuille"""
-    portefeuille = PortefeuilleAdmin.query.get_or_404(id)
-    portefeuille.est_actif = not portefeuille.est_actif
-    db.session.commit()
-    return jsonify({'success': True, 'est_actif': portefeuille.est_actif})
-@admin_bp.route('/notification/<int:notification_id>/read', methods=['POST'])
-@login_required
-def mark_notification_read(notification_id):
-    """Marquer une notification comme lue"""
-    notification = Notification.query.get_or_404(notification_id)
-    
-    if notification.admin_id != current_user.id and notification.utilisateur_id != current_user.id:
+def add_wallet():
+    """Ajouter une adresse wallet"""
+    if not current_user.est_admin:
         return jsonify({'success': False, 'message': 'Non autorisé'}), 403
     
-    notification.est_lue = True
+    reseau = request.form.get('reseau')
+    adresse = request.form.get('adresse')
+    pays = request.form.get('pays')
+    type_portefeuille = request.form.get('type')
+    
+    if not all([reseau, adresse, type_portefeuille]):
+        return jsonify({'success': False, 'message': 'Données manquantes'}), 400
+    
+    portefeuille = PortefeuilleAdmin(
+        reseau=reseau,
+        adresse=adresse,
+        pays=pays,
+        type_portefeuille=type_portefeuille
+    )
+    
+    db.session.add(portefeuille)
+    db.session.commit()
+    
+    return jsonify({'success': True})
+
+@admin_bp.route('/wallet/<int:wallet_id>/delete', methods=['POST'])
+@login_required
+def delete_wallet(wallet_id):
+    """Supprimer une adresse wallet"""
+    if not current_user.est_admin:
+        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
+    
+    portefeuille = PortefeuilleAdmin.query.get_or_404(wallet_id)
+    db.session.delete(portefeuille)
     db.session.commit()
     
     return jsonify({'success': True})
 
 # routes.py - Ajouter ces routes dans la section admin_bp
-from forms import FormulaireTaux
 from datetime import datetime, date, timedelta
 import json
 
@@ -446,7 +446,7 @@ def admin_rates():
         flash('Accès non autorisé.', 'error')
         return redirect(url_for('main.dashboard'))
     
-    formulaire = FormulaireTaux()
+    form = FormulaireTaux()
     
     # Récupérer les taux d'aujourd'hui
     taux_aujourdhui = TauxJournalier.query.filter_by(date=date.today()).first()
@@ -460,16 +460,16 @@ def admin_rates():
     taux_moyen_achat = db.session.query(db.func.avg(TauxJournalier.taux_achat)).scalar() or 0
     taux_moyen_vente = db.session.query(db.func.avg(TauxJournalier.taux_vente)).scalar() or 0
     
-    if formulaire.validate_on_submit():
-        taux_achat = formulaire.taux_achat.data
-        taux_vente = formulaire.taux_vente.data
-        date_application = formulaire.date_application.data or date.today()
+    if form.validate_on_submit():
+        taux_achat = form.taux_achat.data
+        taux_vente = form.taux_vente.data
+        date_application = form.date_application.data or date.today()
         
         # Validation : taux de vente doit être supérieur au taux d'achat
         if taux_vente <= taux_achat:
             flash('Le taux de vente doit être supérieur au taux d\'achat.', 'error')
             return render_template('admin_rates.html',
-                                 formulaire=formulaire,
+                                 form=form,
                                  taux_aujourdhui=taux_aujourdhui,
                                  historique_taux=historique_taux,
                                  taux_moyen_achat=round(taux_moyen_achat, 2),
@@ -513,12 +513,12 @@ def admin_rates():
         return redirect(url_for('admin.admin_rates'))
     
     # Pré-remplir le formulaire avec les taux d'aujourd'hui
-    if taux_aujourdhui and not formulaire.is_submitted():
-        formulaire.taux_achat.data = taux_aujourdhui.taux_achat
-        formulaire.taux_vente.data = taux_aujourdhui.taux_vente
+    if taux_aujourdhui and not form.is_submitted():
+        form.taux_achat.data = taux_aujourdhui.taux_achat
+        form.taux_vente.data = taux_aujourdhui.taux_vente
     
     return render_template('admin_rates.html',
-                         formulaire=formulaire,
+                         form=form,
                          taux_aujourdhui=taux_aujourdhui,
                          historique_taux=historique_taux,
                          taux_moyen_achat=round(taux_moyen_achat, 2),
@@ -723,8 +723,111 @@ def export_rates():
     response.headers["Content-type"] = "text/csv"
     return response
 
+@admin_bp.route('/notification/<int:notification_id>/read', methods=['POST'])
+@login_required
+def mark_notification_read(notification_id):
+    """Marquer une notification comme lue"""
+    notification = Notification.query.get_or_404(notification_id)
+    
+    if notification.admin_id != current_user.id and notification.utilisateur_id != current_user.id:
+        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
+    
+    notification.est_lue = True
+    db.session.commit()
+    
+    return jsonify({'success': True})
+# Vos autres imports et blueprints
+
+@login_required
+def transaction_status(transaction_id):
+    """Afficher le statut d'une transaction"""
+    transaction = Transaction.query.filter_by(identifiant_transaction=transaction_id).first_or_404()
+    
+    # Vérifier que l'utilisateur a accès à cette transaction
+    if transaction.utilisateur_id != current_user.id and not current_user.est_admin:
+        flash('Accès non autorisé', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Récupérer les informations du portefeuille admin correspondant au réseau
+    portefeuille_admin = None
+    numero_admin = None
+    adresse_admin = None
+    
+    if transaction.type_transaction == 'achat':
+        # Pour les achats, récupérer le numéro marchand mobile money
+        portefeuille_admin = PortefeuilleAdmin.query.filter_by(
+            type_portefeuille='mobile_money',
+            est_actif=True
+        ).first()
+        if portefeuille_admin:
+            numero_admin = portefeuille_admin.adresse  # Le numéro est stocké dans le champ adresse
+    
+    elif transaction.type_transaction == 'vente':
+        # Pour les ventes, récupérer l'adresse crypto du réseau correspondant
+        portefeuille_admin = PortefeuilleAdmin.query.filter_by(
+            reseau=transaction.reseau,
+            type_portefeuille='crypto',
+            est_actif=True
+        ).first()
+        if portefeuille_admin:
+            adresse_admin = portefeuille_admin.adresse
+    
+    return render_template('transaction_status.html',
+                         transaction=transaction,
+                         numero_admin=numero_admin,
+                         adresse_admin=adresse_admin,
+                         formater_montant=formater_montant)
+
+@admin_bp.route('/admin_transations_details')
+# Route admin pour les détails de transaction
+@login_required
+def admin_transaction_details(transaction_id):
+    """Retourner les détails d'une transaction pour l'admin"""
+    if not current_user.est_admin:
+        return jsonify({'success': False, 'message': 'Accès non autorisé'}), 403
+    
+    transaction = Transaction.query.filter_by(identifiant_transaction=transaction_id).first_or_404()
+    
+    # Récupérer l'adresse/numéro admin correspondant
+    portefeuille_admin = None
+    info_admin = None
+    
+    if transaction.type_transaction == 'achat':
+        # Numéro marchand
+        portefeuille_admin = PortefeuilleAdmin.query.filter_by(
+            type_portefeuille='mobile_money',
+            est_actif=True
+        ).first()
+        if portefeuille_admin:
+            info_admin = {
+                'type': 'numero_marchand',
+                'label': 'Numéro marchand',
+                'value': portefeuille_admin.adresse
+            }
+    else:
+        # Adresse crypto
+        portefeuille_admin = PortefeuilleAdmin.query.filter_by(
+            reseau=transaction.reseau,
+            type_portefeuille='crypto',
+            est_actif=True
+        ).first()
+        if portefeuille_admin:
+            info_admin = {
+                'type': 'adresse_crypto',
+                'label': f'Adresse {transaction.reseau}',
+                'value': portefeuille_admin.adresse
+            }
+    
+    html = render_template('admin_transaction_details.html',
+                          transaction=transaction,
+                          info_admin=info_admin,
+                          formater_montant=formater_montant)
+    
+    return jsonify({'success': True, 'html': html})
 
 
-
+def formater_montant(montant):
+    """Formater un montant avec des espaces comme séparateurs de milliers"""
+    return "{:,.0f}".format(montant).replace(',', ' ')
 
 
