@@ -133,14 +133,16 @@
                         </td>
                         <td>
                             {% if transaction.type_transaction == 'achat' %}
-                            <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong><br>
-                            <small>{{ transaction.montant_usdt }} USDT</small><br>
-                            <small>{{ transaction.adresse_wallet }}</small>
+                                <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong><br>
+                                <small>{{ transaction.montant_usdt }} USDT</small><br>
+                                <small><strong>Utilisateur:</strong> {{ transaction.adresse_wallet_utilisateur|truncate(20) }}</small><br>
+                                <small><strong>Admin:</strong> {{ transaction.portefeuille_admin_mobile.adresse|truncate(20) }}</small>
                             {% else %}
-                            <strong>{{ transaction.montant_usdt }} USDT</strong><br>
-                            <small>{{ formater_montant(transaction.montant_xaf) }} XAF</small>
-                            {% endif %}
-                        </td>
+                                <strong>{{ transaction.montant_usdt }} USDT</strong><br>
+                                <small>{{ formater_montant(transaction.montant_xaf) }} XAF</small><br>
+                                <small><strong>Utilisateur:</strong> {{ transaction.numero_mobile_utilisateur }}</small><br>
+                                <small><strong>Admin:</strong> {{ transaction.portefeuille_admin_crypto.adresse|truncate(20) }}</small>
+                            {% endif %}</td>
                         <td>{{ transaction.reseau }}</td>
                         <td>{{ transaction.date_creation.strftime('%d/%m %H:%M') }}</td>
                         <td>
@@ -357,3 +359,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
