@@ -23,7 +23,6 @@ class Utilisateur(UserMixin, db.Model):
     est_actif = db.Column(db.Boolean, default=True)
     
     transactions = db.relationship('Transaction', backref='utilisateur', lazy=True)
-
 class Transaction(db.Model):
     __tablename__ = 'transactions'
     
@@ -33,20 +32,24 @@ class Transaction(db.Model):
     type_transaction = db.Column(db.Enum('achat', 'vente'), nullable=False)
     montant_xaf = db.Column(db.Float, nullable=False)
     montant_usdt = db.Column(db.Float, nullable=False)
-    reseau = db.Column(db.String(50), nullable=False)  # TRC20, USDT_TON, etc.
-    adresse_wallet = db.Column(db.String(200))
-    operateur_mobile = db.Column(db.String(50))
-    numero_marchand = db.Column(db.String(20))
+    reseau = db.Column(db.String(50), nullable=False)
+    
+    # Adresses utilisateur
+    adresse_wallet_utilisateur = db.Column(db.String(200))  # Adresse crypto de l'utilisateur
+    numero_mobile_utilisateur = db.Column(db.String(20))    # Numéro mobile de l'utilisateur
+    
+    # Références aux portefeuilles admin
+    portefeuille_admin_crypto_id = db.Column(db.Integer, db.ForeignKey('portefeuilles_admin.id'))
+    portefeuille_admin_mobile_id = db.Column(db.Integer, db.ForeignKey('portefeuilles_admin.id'))
+    
     statut = db.Column(db.Enum('en_attente', 'valide', 'rejete', 'complete'), default='en_attente')
     motif_rejet = db.Column(db.Text)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
     date_validation = db.Column(db.DateTime)
     
-    # Informations de paiement
-    preuve_paiement = db.Column(db.String(200))  # Chemin vers l'image
-    reference_paiement = db.Column(db.String(100))
-    
-    taux_applique = db.Column(db.Float)  # Taux appliquÃ© pour la transaction
+    # Relations
+    portefeuille_admin_crypto = db.relationship('PortefeuilleAdmin', foreign_keys=[portefeuille_admin_crypto_id])
+    portefeuille_admin_mobile = db.relationship('PortefeuilleAdmin', foreign_keys=[portefeuille_admin_mobile_id])
 
 class PortefeuilleAdmin(db.Model):
     __tablename__ = 'portefeuilles_admin'
@@ -78,3 +81,4 @@ class Notification(db.Model):
     message = db.Column(db.Text, nullable=False)
     est_lue = db.Column(db.Boolean, default=False)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
