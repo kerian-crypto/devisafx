@@ -20,6 +20,13 @@
         margin-top: 10px;
         font-size: 0.9rem;
     }
+    .copy-btn {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+        transform: scale(1.1);
+    }
 </style>
 {% endblock %}
 
@@ -135,7 +142,18 @@
                             {% if transaction.type_transaction == 'achat' %}
                             <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong><br>
                             <small>{{ transaction.montant_usdt }} USDT</small><br>
-                            <small>{{ transaction.adresse_wallet }}</small>
+                            {% if transaction.adresse_wallet %}
+                            <div class="d-flex align-items-center mt-1">
+                                <small class="text-truncate" style="max-width: 120px;" title="{{ transaction.adresse_wallet }}">
+                                    {{ transaction.adresse_wallet }}
+                                </small>
+                                <button class="btn btn-sm btn-link p-0 ms-1 copy-btn" 
+                                        onclick="copyToClipboard('{{ transaction.adresse_wallet }}', this)"
+                                        title="Copier l'adresse">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            {% endif %}
                             {% else %}
                             <strong>{{ transaction.montant_usdt }} USDT</strong><br>
                             <small>{{ formater_montant(transaction.montant_xaf) }} XAF</small>
@@ -227,6 +245,45 @@
 
 {% block scripts %}
 <script>
+// Fonction de copie dans le presse-papier
+function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Sauvegarder l'icône originale
+        const originalHTML = button.innerHTML;
+        
+        // Changer l'apparence du bouton
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        button.classList.add('text-success');
+        
+        // Afficher un message de succès
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed top-0 end-0 p-3';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <div class="toast show" role="alert">
+                <div class="toast-header bg-success text-white">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong class="me-auto">Copié !</strong>
+                    <button type="button" class="btn-close btn-close-white" onclick="this.parentElement.parentElement.parentElement.remove()"></button>
+                </div>
+                <div class="toast-body">
+                    L'adresse a été copiée dans le presse-papier
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        // Réinitialiser le bouton après 2 secondes
+        setTimeout(() => {
+            button.innerHTML = originalHTML;
+            button.classList.remove('text-success');
+            toast.remove();
+        }, 2000);
+    }).catch(err => {
+        alert('Erreur lors de la copie : ' + err);
+    });
+}
+
 // Afficher les détails d'une transaction
 function showTransactionDetails(transactionId) {
     fetch(`/admin/transaction/${transactionId}/details`)
