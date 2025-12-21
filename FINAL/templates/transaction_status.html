@@ -54,6 +54,30 @@
         color: var(--secondary-color);
         font-weight: 600;
     }
+    .copy-btn {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .copy-btn:hover {
+        transform: scale(1.1);
+    }
+    .wallet-display {
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 10px 0;
+    }
+    .wallet-address {
+        font-family: monospace;
+        font-size: 0.95rem;
+        word-break: break-all;
+        flex: 1;
+        margin-right: 10px;
+    }
 </style>
 {% endblock %}
 
@@ -73,7 +97,7 @@
                 
                 <!-- Progression de la transaction -->
                 <div class="progress-tracker">
-                    {% set steps = ['initiee', 'en_attente','rejete', 'valide', 'complete'] %}
+                    {% set steps = ['initiee', 'en_attente', 'valide', 'complete'] %}
                     {% set step_labels = ['Initée', 'En attente', 'Validée', 'Complétée'] %}
                     {% set step_icons = ['fa-file-alt', 'fa-clock', 'fa-check-circle', 'fa-check-double'] %}
                     
@@ -153,8 +177,19 @@
                             <h5>Effectuez le paiement mobile money</h5>
                             <div class="alert alert-danger">
                                 <p class="mb-2"><strong>Numéro marchand :</strong></p>
-                                <h3 class="text-center mb-3">{{ numero_admin }}</h3>
-                                <p class="mb-2"><strong>Montant exact à payer :</strong></p>
+                                {% if numero_admin %}
+                                <div class="wallet-display">
+                                    <h3 class="mb-0 wallet-address">{{ numero_admin }}</h3>
+                                    <button class="btn btn-outline-primary copy-btn" 
+                                            onclick="copyToClipboard('{{ numero_admin }}', this)"
+                                            title="Copier le numéro">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                {% else %}
+                                <h3 class="text-center mb-3">{{ transaction.numero_marchand }}</h3>
+                                {% endif %}
+                                <p class="mb-2 mt-3"><strong>Montant exact à payer :</strong></p>
                                 <h3 class="text-center">{{ formater_montant(transaction.montant_xaf) }} XAF</h3>
                             </div>
                             
@@ -169,78 +204,140 @@
                                 </ul>
                             </div>
                             
-                            <p>Après avoir effectué le paiement, notre équipe vérifiera la transaction et vous enverra les USDT sur l'adresse indiquée.</p>
+                            <div class="mt-3">
+                                <p><strong>Après le paiement :</strong></p>
+                                <ol>
+                                    <li>Confirmez que vous avez effectué le paiement</li>
+                                    <li>Notre équipe vérifiera le paiement</li>
+                                    <li>Les USDT seront envoyés à votre adresse wallet</li>
+                                </ol>
+                            </div>
                         </div>
                         {% else %}
                         <div class="transaction-info">
-                            <h5>Envoyez les USDT</h5>
+                            <h5>Envoyez vos USDT à l'adresse suivante</h5>
                             <div class="alert alert-danger">
-                                <p class="mb-2"><strong>Adresse de réception :</strong></p>
-                                <h5 class="text-center mb-3">
-                                    <code id="wallet-address">{{ transaction.adresse_wallet }}</code>
-                                    <button class="btn btn-sm btn-outline-secondary ms-2 copy-wallet" data-address="{{ transaction.adresse_wallet }}">
+                                <p class="mb-2"><strong>Adresse de réception ({{ transaction.reseau }}) :</strong></p>
+                                {% if adresse_admin %}
+                                <div class="wallet-display">
+                                    <code class="wallet-address">{{ adresse_admin }}</code>
+                                    <button class="btn btn-outline-primary copy-btn" 
+                                            onclick="copyToClipboard('{{ adresse_admin }}', this)"
+                                            title="Copier l'adresse">
                                         <i class="fas fa-copy"></i>
                                     </button>
-                                </h5>
-                                <p class="mb-2"><strong>Montant exact à envoyer :</strong></p>
+                                </div>
+                                {% else %}
+                                <code class="d-block text-center p-2">Non disponible</code>
+                                {% endif %}
+                                <p class="mb-2 mt-3"><strong>Montant à envoyer :</strong></p>
                                 <h3 class="text-center">{{ transaction.montant_usdt }} USDT</h3>
-                                <p class="mb-0 text-center"><strong>Réseau :</strong> {{ transaction.reseau }}</p>
                             </div>
                             
                             <div class="warning-box">
                                 <h6><i class="fas fa-ban me-2"></i>ATTENTION IMPORTANTE</h6>
                                 <ul class="mb-0">
-                                    <li>Envoyez le montant EXACT en USDT indiqué</li>
-                                    <li>Vérifiez que le réseau correspond</li>
-                                    <li>Tout envoi d'un montant différent sera REJETÉ</li>
-                                    <li>Les fonds d'un envoi erroné seront RETENUS</li>
-                                    <li>Cette adresse est unique à cette transaction</li>
+                                    <li>Utilisez UNIQUEMENT le réseau <strong>{{ transaction.reseau }}</strong></li>
+                                    <li>Tout envoi sur un autre réseau sera PERDU</li>
+                                    <li>Vérifiez bien l'adresse avant d'envoyer</li>
+                                    <li>Envoyez le montant EXACT indiqué</li>
+                                    <li>Conservez la preuve de transaction (hash)</li>
                                 </ul>
                             </div>
                             
-                            <p>Après avoir envoyé les USDT, notre équipe vérifiera la transaction et vous enverra les XAF sur votre compte mobile money.</p>
+                            <div class="mt-3">
+                                <p><strong>Après l'envoi :</strong></p>
+                                <ol>
+                                    <li>Confirmez que vous avez envoyé les USDT</li>
+                                    <li>Notre équipe vérifiera la transaction blockchain</li>
+                                    <li>Les XAF seront envoyés sur votre numéro mobile money</li>
+                                </ol>
+                            </div>
                         </div>
                         {% endif %}
                     </div>
                 </div>
                 {% endif %}
                 
-                <!-- Informations détaillées -->
+                <!-- Récapitulatif complet -->
                 <div class="card mb-4">
                     <div class="card-header">
-                        <i class="fas fa-info-circle me-2"></i>Informations détaillées
+                        <i class="fas fa-list me-2"></i>Récapitulatif de la transaction
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
                                 <table class="table table-borderless">
                                     <tr>
-                                        <th>Type de transaction:</th>
+                                        <th>Type:</th>
                                         <td>
                                             {% if transaction.type_transaction == 'achat' %}
-                                            <span class="badge bg-primary">Achat USDT</span>
+                                            <span class="badge bg-primary">Achat</span>
                                             {% else %}
-                                            <span class="badge bg-success">Vente USDT</span>
+                                            <span class="badge bg-success">Vente</span>
                                             {% endif %}
                                         </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Montant XAF:</th>
+                                        <td>{{ formater_montant(transaction.montant_xaf) }} XAF</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Montant USDT:</th>
+                                        <td>{{ transaction.montant_usdt }} USDT</td>
                                     </tr>
                                     <tr>
                                         <th>Réseau:</th>
                                         <td>{{ transaction.reseau }}</td>
                                     </tr>
-                                    {% if transaction.type_transaction == 'achat' %}
+                                    {% if transaction.type_transaction == 'achat' and transaction.adresse_wallet %}
                                     <tr>
-                                        <th>Adresse de réception:</th>
-                                        <td><code>{{ transaction.adresse_wallet|truncate(20) }}</code></td>
+                                        <th>Votre wallet:</th>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <code class="flex-grow-1" style="font-size: 0.8rem;">{{ transaction.adresse_wallet }}</code>
+                                                <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" 
+                                                        onclick="copyToClipboard('{{ transaction.adresse_wallet }}', this)"
+                                                        title="Copier">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
-                                    {% else %}
+                                    {% endif %}
+                                    {% if transaction.type_transaction == 'achat' and numero_admin %}
                                     <tr>
-                                        <th>Numéro de réception:</th>
-                                        <td>{{ transaction.numero_mobile }}</td>
+                                        <th>NUMERO MARCHAND:</th>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="flex-grow-1">{{ numero_admin }}</span>
+                                                <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" 
+                                                        onclick="copyToClipboard('{{ numero_admin }}', this)"
+                                                        title="Copier">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
+                                    {% elif transaction.type_transaction == 'achat' and transaction.numero_marchand %}
                                     <tr>
                                         <th>NUMERO MARCHAND:</th>
                                         <td>{{ transaction.numero_marchand }}</td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if transaction.type_transaction == 'vente' and adresse_admin %}
+                                    <tr>
+                                        <th>ADRESSE ADMIN:</th>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <code class="flex-grow-1" style="font-size: 0.75rem; word-break: break-all;">{{ adresse_admin }}</code>
+                                                <button class="btn btn-sm btn-outline-secondary ms-2 copy-btn" 
+                                                        onclick="copyToClipboard('{{ adresse_admin }}', this)"
+                                                        title="Copier">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
                                     {% endif %}
                                 </table>
@@ -315,11 +412,11 @@
                         </button>
                         {% if transaction.type_transaction == 'achat' %}
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
-                            <i class="fas fa-check me-2"></i>voulez vous continuer le paiement
+                            <i class="fas fa-check me-2"></i>J'ai effectué le paiement
                         </button>
                         {% else %}
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sentModal">
-                            <i class="fas fa-check me-2"></i>voulez vous continuer l'envoi
+                            <i class="fas fa-check me-2"></i>J'ai envoyé les USDT
                         </button>
                         {% endif %}
                     </div>
@@ -339,7 +436,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Avez-vous effectué le paiement de <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> au numéro <strong>{{ transaction.numero_marchand }}</strong> ?</p>
+                <p>Avez-vous effectué le paiement de <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> 
+                {% if numero_admin %}au numéro <strong>{{ numero_admin }}</strong>{% endif %} ?</p>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Après confirmation, notre équipe vérifiera le paiement et procédera à l'envoi des USDT.
@@ -362,7 +460,11 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong> à l'adresse <code>{{ transaction.adresse_wallet|truncate(20) }}</code> sur le réseau <strong>{{ transaction.reseau }}</strong> ?</p>
+                <p>Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong> 
+                {% if adresse_admin %}
+                à l'adresse <code>{{ adresse_admin|truncate(20) }}</code>
+                {% endif %}
+                sur le réseau <strong>{{ transaction.reseau }}</strong> ?</p>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Après confirmation, notre équipe vérifiera la transaction et procédera à l'envoi des XAF.
@@ -389,26 +491,45 @@ function confirmSent() {
     window.location.reload();
 }
 
-// Copier l'adresse wallet
-document.querySelectorAll('.copy-wallet').forEach(button => {
-    button.addEventListener('click', function() {
-        const address = this.getAttribute('data-address');
-        navigator.clipboard.writeText(address).then(() => {
-            const originalHTML = this.innerHTML;
-            this.innerHTML = '<i class="fas fa-check"></i>';
-            this.classList.remove('btn-outline-secondary');
-            this.classList.add('btn-success');
-            
-            setTimeout(() => {
-                this.innerHTML = originalHTML;
-                this.classList.remove('btn-success');
-                this.classList.add('btn-outline-secondary');
-            }, 2000);
-        });
+// Fonction de copie dans le presse-papier
+function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(() => {
+        // Sauvegarder l'icône originale
+        const originalHTML = button.innerHTML;
+        
+        // Changer l'apparence du bouton
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        button.classList.remove('btn-outline-primary', 'btn-outline-secondary');
+        button.classList.add('btn-success');
+        
+        // Afficher un message de succès
+        const toast = document.createElement('div');
+        toast.className = 'position-fixed top-0 end-0 p-3';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <div class="toast show" role="alert">
+                <div class="toast-header bg-success text-white">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong class="me-auto">Copié !</strong>
+                    <button type="button" class="btn-close btn-close-white" onclick="this.parentElement.parentElement.parentElement.remove()"></button>
+                </div>
+                <div class="toast-body">
+                    L'adresse a été copiée dans le presse-papier
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        // Réinitialiser le bouton après 2 secondes
+        setTimeout(() => {
+            button.innerHTML = originalHTML;
+            button.classList.remove('btn-success');
+            button.classList.add('btn-outline-primary');
+            toast.remove();
+        }, 2000);
+    }).catch(err => {
+        alert('Erreur lors de la copie : ' + err);
     });
-});
+}
 </script>
-
 {% endblock %}
-
-
