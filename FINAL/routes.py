@@ -98,7 +98,6 @@ def buy():
     """Achat de USDT"""
     formulaire = FormulaireAchat()
     
-    # Récupérer le taux du jour
     taux_du_jour = TauxJournalier.query.order_by(TauxJournalier.date.desc()).first()
     taux_vente = taux_du_jour.taux_vente if taux_du_jour else Config.DEFAULT_USDT_RATE
     
@@ -108,8 +107,16 @@ def buy():
         taux_final = taux_vente * (1 + Config.PROFIT_MARGIN)
         montant_usdt = montant_xaf / taux_final
         
-        # Générer un numéro marchand
-        numero_marchand = generer_numero_marchand(current_user.pays, formulaire.operateur_mobile.data)
+        # Sélectionner un portefeuille mobile money admin actif
+        portefeuille_mobile = PortefeuilleAdmin.query.filter_by(
+            type_portefeuille='mobile_money',
+            pays=current_user.pays,
+            est_actif=True
+        ).first()
+        
+        if not portefeuille_mobile:
+            flash("Aucun portefeuille admin disponible pour le moment", "error")
+            return redirect(url_for('main.buy'))
         
         # Créer la transaction
         transaction = Transaction(
@@ -118,9 +125,8 @@ def buy():
             montant_xaf=montant_xaf,
             montant_usdt=round(montant_usdt, 2),
             reseau=formulaire.reseau.data,
-            adresse_wallet=formulaire.adresse_wallet.data,
-            operateur_mobile=formulaire.operateur_mobile.data,
-            numero_marchand=numero_marchand,
+            adresse_wallet_utilisateur=formulaire.adresse_wallet.data,
+            portefeuille_admin_mobile_id=portefeuille_mobile.id,
             taux_applique=taux_final,
             statut='en_attente'
         )
@@ -128,20 +134,18 @@ def buy():
         db.session.add(transaction)
         db.session.commit()
         
-        # Créer une notification pour l'admin
+        # Notification pour l'admin
         notification = Notification(
-            admin_id=1,  # ID de l'admin principal
+            admin_id=1,
             type_notification='nouvelle_transaction',
             message=f"Nouvelle transaction d'achat: {montant_xaf} XAF par {current_user.nom}"
         )
         db.session.add(notification)
         db.session.commit()
         
-        return redirect(url_for('transaction_status', transaction_id=transaction.identifiant_transaction))
+        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
     
-    return render_template('buy.html', 
-                         formulaire=formulaire,
-                         taux_vente=taux_vente)
+    return render_template('buy.html', formulaire=formulaire, taux_vente=taux_vente)
 
 @main_bp.route('/sell', methods=['GET', 'POST'])
 @login_required
@@ -149,7 +153,6 @@ def sell():
     """Vente de USDT"""
     formulaire = FormulaireVente()
     
-    # Récupérer le taux du jour
     taux_du_jour = TauxJournalier.query.order_by(TauxJournalier.date.desc()).first()
     taux_achat = taux_du_jour.taux_achat if taux_du_jour else Config.DEFAULT_USDT_RATE
     
@@ -159,8 +162,16 @@ def sell():
         taux_final = taux_achat * (1 - Config.PROFIT_MARGIN)
         montant_xaf = montant_usdt * taux_final
         
-        # Générer un numéro marchand pour le virement
-        numero_marchand = generer_numero_marchand(current_user.pays, formulaire.operateur_mobile.data)
+        # Sélectionner un portefeuille crypto admin actif pour ce réseau
+        portefeuille_crypto = PortefeuilleAdmin.query.filter_by(
+            type_portefeuille='crypto',
+            reseau=formulaire.reseau.data,
+            est_actif=True
+        ).first()
+        
+        if not portefeuille_crypto:
+            flash("Aucun portefeuille admin disponible pour ce réseau", "error")
+            return redirect(url_for('main.sell'))
         
         # Créer la transaction
         transaction = Transaction(
@@ -169,9 +180,8 @@ def sell():
             montant_xaf=round(montant_xaf, 2),
             montant_usdt=montant_usdt,
             reseau=formulaire.reseau.data,
-            adresse_wallet=formulaire.adresse_wallet.data,
-            operateur_mobile=formulaire.operateur_mobile.data,
-            numero_marchand=numero_marchand,
+            numero_mobile_utilisateur=formulaire.numero_mobile.data,
+            portefeuille_admin_crypto_id=portefeuille_crypto.id,
             taux_applique=taux_final,
             statut='en_attente'
         )
@@ -179,21 +189,18 @@ def sell():
         db.session.add(transaction)
         db.session.commit()
         
-        # Créer une notification pour l'admin
+        # Notification pour l'admin
         notification = Notification(
-            admin_id=1,  # ID de l'admin principal
+            admin_id=1,
             type_notification='nouvelle_transaction',
             message=f"Nouvelle transaction de vente: {montant_usdt} USDT par {current_user.nom}"
         )
         db.session.add(notification)
         db.session.commit()
         
-        return redirect(url_for('transaction_status', transaction_id=transaction.identifiant_transaction))
+        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
     
-    return render_template('sell.html', 
-                         formulaire=formulaire,
-                         taux_achat=taux_achat)
-
+    return render_template('sell.html', formulaire=formulaire, taux_achat=taux_achat)
 @main_bp.route('/transaction/<transaction_id>')
 @login_required
 def transaction_status(transaction_id):
@@ -421,5 +428,6 @@ def mark_notification_read(notification_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
 
 
