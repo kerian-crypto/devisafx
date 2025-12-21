@@ -35,7 +35,7 @@ class Transaction(db.Model):
     reseau = db.Column(db.String(50), nullable=False)
     
     # Adresses utilisateur
-    ALTER TABLE transactions ADD COLUMN adresse_wallet_utilisateur VARCHAR(255);  # Adresse crypto de l'utilisateur
+    adresse_wallet_utilisateur= db.Column(db.String(20))  # Adresse crypto de l'utilisateur
     numero_mobile_utilisateur = db.Column(db.String(20))    # Numéro mobile de l'utilisateur
     
     # Références aux portefeuilles admin
