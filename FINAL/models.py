@@ -255,3 +255,4 @@ class ParametreSysteme(db.Model):
             )
             db.session.add(param)
         db.session.commit()
+
