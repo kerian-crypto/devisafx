@@ -153,7 +153,9 @@
                             <h5>Effectuez le paiement mobile money</h5>
                             <div class="alert alert-danger">
                                 <p class="mb-2"><strong>Numéro marchand :</strong></p>
-                                <h3 class="text-center mb-3">{{ numero_admin }}</h3>
+                                <h3 class="text-center mb-3">
+                                    {{ transaction.portefeuille_admin_mobile.adresse }}
+                                </h3>
                                 <p class="mb-2"><strong>Montant exact à payer :</strong></p>
                                 <h3 class="text-center">{{ formater_montant(transaction.montant_xaf) }} XAF</h3>
                             </div>
@@ -177,8 +179,11 @@
                             <div class="alert alert-danger">
                                 <p class="mb-2"><strong>Adresse de réception :</strong></p>
                                 <h5 class="text-center mb-3">
-                                    <code id="wallet-address">{{ transaction.adresse_wallet }}</code>
-                                    <button class="btn btn-sm btn-outline-secondary ms-2 copy-wallet" data-address="{{ transaction.adresse_wallet }}">
+                                    <code id="wallet-address">
+                                        {{ transaction.portefeuille_admin_crypto.adresse }}
+                                    </code>
+                                    <button class="btn btn-sm btn-outline-secondary ms-2 copy-wallet" 
+                                            data-address="{{ transaction.portefeuille_admin_crypto.adresse }}">
                                         <i class="fas fa-copy"></i>
                                     </button>
                                 </h5>
@@ -230,17 +235,13 @@
                                     </tr>
                                     {% if transaction.type_transaction == 'achat' %}
                                     <tr>
-                                        <th>Adresse de réception:</th>
-                                        <td><code>{{ transaction.adresse_wallet|truncate(20) }}</code></td>
+                                        <th>Votre adresse USDT:</th>
+                                        <td><code>{{ transaction.adresse_wallet_utilisateur|truncate(20) }}</code></td>
                                     </tr>
                                     {% else %}
                                     <tr>
-                                        <th>Numéro de réception:</th>
-                                        <td>{{ transaction.numero_mobile }}</td>
-                                    </tr>
-                                    <tr>
-                                        <th>NUMERO MARCHAND:</th>
-                                        <td>{{ transaction.numero_marchand }}</td>
+                                        <th>Votre numéro mobile:</th>
+                                        <td>{{ transaction.numero_mobile_utilisateur }}</td>
                                     </tr>
                                     {% endif %}
                                 </table>
@@ -251,10 +252,17 @@
                                         <th>Taux appliqué:</th>
                                         <td>{{ transaction.taux_applique|round(2) }} XAF/USDT</td>
                                     </tr>
+                                    {% if transaction.type_transaction == 'achat' %}
                                     <tr>
-                                        <th>Opérateur:</th>
-                                        <td>{{ transaction.operateur_mobile }}</td>
+                                        <th>Numéro marchand:</th>
+                                        <td>{{ transaction.portefeuille_admin_mobile.adresse }}</td>
                                     </tr>
+                                    {% else %}
+                                    <tr>
+                                        <th>Adresse de réception USDT:</th>
+                                        <td><code>{{ transaction.portefeuille_admin_crypto.adresse|truncate(20) }}</code></td>
+                                    </tr>
+                                    {% endif %}
                                     {% if transaction.date_validation %}
                                     <tr>
                                         <th>Date de validation:</th>
@@ -315,11 +323,11 @@
                         </button>
                         {% if transaction.type_transaction == 'achat' %}
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
-                            <i class="fas fa-check me-2"></i>voulez vous continuer le paiement
+                            <i class="fas fa-check me-2"></i>J'ai effectué le paiement
                         </button>
                         {% else %}
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sentModal">
-                            <i class="fas fa-check me-2"></i>voulez vous continuer l'envoi
+                            <i class="fas fa-check me-2"></i>J'ai envoyé les USDT
                         </button>
                         {% endif %}
                     </div>
@@ -339,7 +347,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Avez-vous effectué le paiement de <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> au numéro <strong>{{ transaction.numero_marchand }}</strong> ?</p>
+                <p>Avez-vous effectué le paiement de <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> au numéro <strong>{{ transaction.portefeuille_admin_mobile.adresse }}</strong> ?</p>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Après confirmation, notre équipe vérifiera le paiement et procédera à l'envoi des USDT.
@@ -362,7 +370,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong> à l'adresse <code>{{ transaction.adresse_wallet|truncate(20) }}</code> sur le réseau <strong>{{ transaction.reseau }}</strong> ?</p>
+                <p>Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong> à l'adresse <code>{{ transaction.portefeuille_admin_crypto.adresse|truncate(20) }}</code> sur le réseau <strong>{{ transaction.reseau }}</strong> ?</p>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Après confirmation, notre équipe vérifiera la transaction et procédera à l'envoi des XAF.
@@ -376,7 +384,6 @@
     </div>
 </div>
 {% endblock %}
-
 {% block scripts %}
 <script>
 function confirmPayment() {
@@ -409,3 +416,4 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
 });
 </script>
 {% endblock %}
+
