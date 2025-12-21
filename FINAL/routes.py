@@ -380,7 +380,10 @@ def admin_wallets():
 def add_wallet():
     """Ajouter une adresse wallet"""
     if not current_user.est_admin:
-        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
+        flash('Acces non Autorise.', 'success')
+        return render_template('admin_wallets')
+
+    form= FourmulaireAjoutWallet
     
     reseau = request.form.get('reseau')
     adresse = request.form.get('adresse')
@@ -389,18 +392,23 @@ def add_wallet():
     
     if not all([reseau, adresse, type_portefeuille]):
         return jsonify({'success': False, 'message': 'Données manquantes'}), 400
+        
+    # Utiliser le formulaire WTForms pour la validation
+    form = FormulaireAjoutWallet()
     
-    portefeuille = PortefeuilleAdmin(
-        reseau=reseau,
-        adresse=adresse,
-        pays=pays,
-        type_portefeuille=type_portefeuille
-    )
-    
-    db.session.add(portefeuille)
-    db.session.commit()
-    
-    return jsonify({'success': True})
+    # Valider le formulaire
+    if form.validate_on_submit():
+        # Créer un nouveau portefeuille
+        portefeuille = PortefeuilleAdmin(
+            type_portefeuille=form.type_portefeuille.data,
+            reseau=form.reseau.data,
+            adresse=form.adresse.data.strip(),
+            pays=form.pays.data if form.pays.data else None,
+            est_actif=True if form.est_actif.data == 'actif' else False,
+            date_ajout=datetime.utcnow()
+        )
+        
+    return render_template('admin_wallets', portefeuille=portefeuille)
 
 @admin_bp.route('/wallet/<int:wallet_id>/delete', methods=['POST'])
 @login_required
@@ -428,3 +436,4 @@ def mark_notification_read(notification_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
