@@ -433,6 +433,297 @@ def mark_notification_read(notification_id):
     
     return jsonify({'success': True})
 
+# routes.py - Ajouter ces routes dans la section admin_bp
+from forms import FormulaireTaux
+from datetime import datetime, date, timedelta
+import json
+
+@admin_bp.route('/rates', methods=['GET', 'POST'])
+@login_required
+def admin_rates():
+    """Gestion des taux de change par l'admin"""
+    if not current_user.est_admin:
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    formulaire = FormulaireTaux()
+    
+    # Récupérer les taux d'aujourd'hui
+    taux_aujourdhui = TauxJournalier.query.filter_by(date=date.today()).first()
+    
+    # Récupérer l'historique des taux (30 derniers jours)
+    historique_taux = TauxJournalier.query.order_by(
+        TauxJournalier.date.desc()
+    ).limit(30).all()
+    
+    # Statistiques des taux
+    taux_moyen_achat = db.session.query(db.func.avg(TauxJournalier.taux_achat)).scalar() or 0
+    taux_moyen_vente = db.session.query(db.func.avg(TauxJournalier.taux_vente)).scalar() or 0
+    
+    if formulaire.validate_on_submit():
+        taux_achat = formulaire.taux_achat.data
+        taux_vente = formulaire.taux_vente.data
+        date_application = formulaire.date_application.data or date.today()
+        
+        # Validation : taux de vente doit être supérieur au taux d'achat
+        if taux_vente <= taux_achat:
+            flash('Le taux de vente doit être supérieur au taux d\'achat.', 'error')
+            return render_template('admin_rates.html',
+                                 formulaire=formulaire,
+                                 taux_aujourdhui=taux_aujourdhui,
+                                 historique_taux=historique_taux,
+                                 taux_moyen_achat=round(taux_moyen_achat, 2),
+                                 taux_moyen_vente=round(taux_moyen_vente, 2),
+                                 today=date.today())
+        
+        # Vérifier si un taux existe déjà pour cette date
+        taux_existant = TauxJournalier.query.filter_by(date=date_application).first()
+        
+        if taux_existant:
+            # Mettre à jour le taux existant
+            taux_existant.taux_achat = taux_achat
+            taux_existant.taux_vente = taux_vente
+            taux_existant.timestamp = datetime.utcnow()
+            message = 'Taux mis à jour avec succès pour le '
+        else:
+            # Créer un nouveau taux
+            nouveau_taux = TauxJournalier(
+                taux_achat=taux_achat,
+                taux_vente=taux_vente,
+                date=date_application
+            )
+            db.session.add(nouveau_taux)
+            message = 'Nouveau taux ajouté avec succès pour le '
+        
+        db.session.commit()
+        
+        # Notifier tous les utilisateurs via notification
+        if date_application == date.today():
+            utilisateurs = Utilisateur.query.filter_by(est_actif=True).all()
+            for utilisateur in utilisateurs:
+                notification = Notification(
+                    utilisateur_id=utilisateur.id,
+                    type_notification='taux_mis_a_jour',
+                    message=f'Nouveaux taux disponibles : Achat {taux_achat} XAF | Vente {taux_vente} XAF'
+                )
+                db.session.add(notification)
+            db.session.commit()
+        
+        flash(f'{message} {date_application.strftime("%d/%m/%Y")}.', 'success')
+        return redirect(url_for('admin.admin_rates'))
+    
+    # Pré-remplir le formulaire avec les taux d'aujourd'hui
+    if taux_aujourdhui and not formulaire.is_submitted():
+        formulaire.taux_achat.data = taux_aujourdhui.taux_achat
+        formulaire.taux_vente.data = taux_aujourdhui.taux_vente
+    
+    return render_template('admin_rates.html',
+                         formulaire=formulaire,
+                         taux_aujourdhui=taux_aujourdhui,
+                         historique_taux=historique_taux,
+                         taux_moyen_achat=round(taux_moyen_achat, 2),
+                         taux_moyen_vente=round(taux_moyen_vente, 2),
+                         today=date.today())
+
+@admin_bp.route('/api/rates/history')
+@login_required
+def rates_history_api():
+    """API pour obtenir l'historique des taux (pour graphique)"""
+    if not current_user.est_admin:
+        return jsonify({'error': 'Non autorisé'}), 403
+    
+    # Récupérer les 60 derniers jours
+    jours = request.args.get('days', 30, type=int)
+    date_debut = date.today() - timedelta(days=jours)
+    
+    historique = TauxJournalier.query.filter(
+        TauxJournalier.date >= date_debut
+    ).order_by(TauxJournalier.date).all()
+    
+    data = {
+        'dates': [t.date.strftime('%Y-%m-%d') for t in historique],
+        'achat': [float(t.taux_achat) for t in historique],
+        'vente': [float(t.taux_vente) for t in historique],
+        'ecart': [float(t.taux_vente - t.taux_achat) for t in historique]
+    }
+    
+    return jsonify(data)
+
+@admin_bp.route('/api/rates/update', methods=['POST'])
+@login_required
+def update_rates_api():
+    """API pour mettre à jour les taux (AJAX)"""
+    if not current_user.est_admin:
+        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
+    
+    data = request.get_json()
+    
+    taux_achat = data.get('taux_achat')
+    taux_vente = data.get('taux_vente')
+    date_application = data.get('date_application')
+    
+    if not taux_achat or not taux_vente:
+        return jsonify({'success': False, 'message': 'Données manquantes'})
+    
+    try:
+        taux_achat = float(taux_achat)
+        taux_vente = float(taux_vente)
+        
+        if taux_vente <= taux_achat:
+            return jsonify({'success': False, 'message': 'Le taux de vente doit être supérieur au taux d\'achat'})
+        
+        if date_application:
+            date_application = datetime.strptime(date_application, '%Y-%m-%d').date()
+        else:
+            date_application = date.today()
+        
+        # Vérifier si un taux existe déjà pour cette date
+        taux_existant = TauxJournalier.query.filter_by(date=date_application).first()
+        
+        if taux_existant:
+            taux_existant.taux_achat = taux_achat
+            taux_existant.taux_vente = taux_vente
+            taux_existant.timestamp = datetime.utcnow()
+            message = 'Taux mis à jour'
+        else:
+            nouveau_taux = TauxJournalier(
+                taux_achat=taux_achat,
+                taux_vente=taux_vente,
+                date=date_application
+            )
+            db.session.add(nouveau_taux)
+            message = 'Nouveau taux ajouté'
+        
+        db.session.commit()
+        
+        # Si c'est pour aujourd'hui, notifier les utilisateurs
+        if date_application == date.today():
+            from email_utils import send_rate_update_notification
+            # Envoyer des notifications push ou emails aux utilisateurs actifs
+            pass
+        
+        return jsonify({
+            'success': True,
+            'message': f'{message} avec succès',
+            'taux': {
+                'achat': taux_achat,
+                'vente': taux_vente,
+                'date': date_application.strftime('%Y-%m-%d')
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@admin_bp.route('/rates/delete/<int:rate_id>', methods=['POST'])
+@login_required
+def delete_rate(rate_id):
+    """Supprimer un taux de l'historique"""
+    if not current_user.est_admin:
+        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
+    
+    taux = TauxJournalier.query.get_or_404(rate_id)
+    
+    # Ne pas permettre la suppression du taux d'aujourd'hui
+    if taux.date == date.today():
+        return jsonify({'success': False, 'message': 'Impossible de supprimer le taux du jour actuel'})
+    
+    try:
+        db.session.delete(taux)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Taux supprimé avec succès'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@admin_bp.route('/rates/duplicate/<int:rate_id>', methods=['POST'])
+@login_required
+def duplicate_rate(rate_id):
+    """Dupliquer un taux pour une nouvelle date"""
+    if not current_user.est_admin:
+        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
+    
+    taux_source = TauxJournalier.query.get_or_404(rate_id)
+    nouvelle_date = request.form.get('nouvelle_date')
+    
+    if not nouvelle_date:
+        return jsonify({'success': False, 'message': 'Date manquante'})
+    
+    try:
+        nouvelle_date = datetime.strptime(nouvelle_date, '%Y-%m-%d').date()
+        
+        # Vérifier si un taux existe déjà pour cette date
+        taux_existant = TauxJournalier.query.filter_by(date=nouvelle_date).first()
+        
+        if taux_existant:
+            return jsonify({'success': False, 'message': 'Un taux existe déjà pour cette date'})
+        
+        nouveau_taux = TauxJournalier(
+            taux_achat=taux_source.taux_achat,
+            taux_vente=taux_source.taux_vente,
+            date=nouvelle_date
+        )
+        
+        db.session.add(nouveau_taux)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Taux dupliqué pour le {nouvelle_date.strftime("%d/%m/%Y")}',
+            'taux': {
+                'achat': taux_source.taux_achat,
+                'vente': taux_source.taux_vente,
+                'date': nouvelle_date.strftime('%Y-%m-%d')
+            }
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@admin_bp.route('/rates/export')
+@login_required
+def export_rates():
+    """Exporter l'historique des taux en CSV/Excel"""
+    if not current_user.est_admin:
+        flash('Accès non autorisé.', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Récupérer tous les taux
+    taux = TauxJournalier.query.order_by(TauxJournalier.date.desc()).all()
+    
+    # Créer un CSV
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # En-têtes
+    writer.writerow(['Date', 'Taux Achat (XAF)', 'Taux Vente (XAF)', 'Écart (XAF)', 'Marge (%)'])
+    
+    # Données
+    for t in taux:
+        ecart = t.taux_vente - t.taux_achat
+        marge = (ecart / t.taux_achat) * 100 if t.taux_achat > 0 else 0
+        writer.writerow([
+            t.date.strftime('%Y-%m-%d'),
+            t.taux_achat,
+            t.taux_vente,
+            round(ecart, 2),
+            round(marge, 2)
+        ])
+    
+    output.seek(0)
+    
+    from flask import make_response
+    response = make_response(output.getvalue())
+    response.headers["Content-Disposition"] = "attachment; filename=taux_devisa_fx.csv"
+    response.headers["Content-type"] = "text/csv"
+    return response
+
+
 
 
 
