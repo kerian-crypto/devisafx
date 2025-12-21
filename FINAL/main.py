@@ -10,17 +10,15 @@ from models import db, Utilisateur
 from routes import main_bp, admin_bp
 from auth import auth_bp
 
-migrate = Migrate()
-
 
 """Factory pour créer l'application Flask"""
 app = Flask(__name__)
 app.config.from_object(Config)
-    
+
 # Initialiser les extensions
 db.init_app(app)
+migrate = Migrate(app, db)
 
-migrate.init_app(app, db)
     
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -47,6 +45,7 @@ def health_check():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
