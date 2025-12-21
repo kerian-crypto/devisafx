@@ -17,6 +17,10 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 @main_bp.route('/')
 def index():
     """Page d'accueil"""
+    if current_user.is_authenticated:
+        if current_user.est_admin:
+            return redirect(url_for('admin.admin_dashboard'))
+        return redirect(url_for('main.dashboard'))
     return render_template('index.html')
 
 @main_bp.route('/register', methods=['GET', 'POST'])
@@ -428,6 +432,7 @@ def mark_notification_read(notification_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
 
 
 
