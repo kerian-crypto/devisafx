@@ -194,7 +194,7 @@
                 <h5 class="modal-title">Ajouter un portefeuille</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form id="addWalletForm">
+            <form id="addWalletForm" action='{{ url_for('/wallet/add') }}' method='POST' >
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="wallet_type" class="form-label">Type de portefeuille *</label>
@@ -307,7 +307,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="submit" class="btn btn-primary">Ajouter le portefeuille</button>
                 </div>
             </form>
         </div>
@@ -417,4 +417,5 @@ document.getElementById('wallet_type').addEventListener('change', function() {
     }
 });
 </script>
+
 {% endblock %}
