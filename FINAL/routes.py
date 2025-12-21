@@ -375,54 +375,39 @@ def admin_wallets():
     
     return render_template('admin_wallets.html', portefeuilles=portefeuilles)
 
-@admin_bp.route('/wallet/add', methods=['POST'])
-@login_required
-def add_wallet():
-    """Ajouter une adresse wallet"""
-    if not current_user.est_admin:
-        flash('Acces non Autorise.', 'success')
-        return render_template('admin_wallets')
-
-    form= FourmulaireAjoutWallet
-    
-    reseau = request.form.get('reseau')
-    adresse = request.form.get('adresse')
-    pays = request.form.get('pays')
-    type_portefeuille = request.form.get('type')
-    
-    if not all([reseau, adresse, type_portefeuille]):
-        return jsonify({'success': False, 'message': 'Données manquantes'}), 400
+@admin_bp.route('/wallets/add', methods=['GET', 'POST'])
+@admin_required
+def wallets():
+    """Gestion des portefeuilles admin"""
+    if request.method == 'POST':
+        reseau = request.form.get('reseau')
+        adresse = request.form.get('adresse')
+        pays = request.form.get('pays')
+        type_portefeuille = request.form.get('type_portefeuille')
         
-    # Utiliser le formulaire WTForms pour la validation
-    form = FormulaireAjoutWallet()
-    
-    # Valider le formulaire
-    if form.validate_on_submit():
-        # Créer un nouveau portefeuille
         portefeuille = PortefeuilleAdmin(
-            type_portefeuille=form.type_portefeuille.data,
-            reseau=form.reseau.data,
-            adresse=form.adresse.data.strip(),
-            pays=form.pays.data if form.pays.data else None,
-            est_actif=True if form.est_actif.data == 'actif' else False,
-            date_ajout=datetime.utcnow()
+            reseau=reseau,
+            adresse=adresse,
+            pays=pays,
+            type_portefeuille=type_portefeuille
         )
         
-    return render_template('admin_wallets', portefeuille=portefeuille)
-
-@admin_bp.route('/wallet/<int:wallet_id>/delete', methods=['POST'])
-@login_required
-def delete_wallet(wallet_id):
-    """Supprimer une adresse wallet"""
-    if not current_user.est_admin:
-        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
+        db.session.add(portefeuille)
+        db.session.commit()
+        flash("Portefeuille ajouté avec succès", "success")
+        return redirect(url_for('admin.admin_wallets'))
     
-    portefeuille = PortefeuilleAdmin.query.get_or_404(wallet_id)
-    db.session.delete(portefeuille)
+    portefeuilles = PortefeuilleAdmin.query.all()
+    return render_template('admin_wallets.html', portefeuilles=portefeuilles)
+
+@admin_bp.route('/admin/wallet/<int:id>/toggle', methods=['POST'])
+@admin_required
+def toggle_portefeuille(id):
+    """Activer/désactiver un portefeuille"""
+    portefeuille = PortefeuilleAdmin.query.get_or_404(id)
+    portefeuille.est_actif = not portefeuille.est_actif
     db.session.commit()
-    
-    return jsonify({'success': True})
-
+    return jsonify({'success': True, 'est_actif': portefeuille.est_actif})
 @admin_bp.route('/notification/<int:notification_id>/read', methods=['POST'])
 @login_required
 def mark_notification_read(notification_id):
@@ -436,4 +421,5 @@ def mark_notification_read(notification_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
 
