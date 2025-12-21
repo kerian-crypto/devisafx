@@ -204,7 +204,7 @@ def sell():
         
         db.session.add(transaction)
         db.session.commit()
-        numero_admin= PortefeuilleAdmin.query.filter_by(reseau=current_user.reseau, type_portefeuille='mobile_money').first()
+        numero_admin= PortefeuilleAdmin.query.filter_by(reseau=current_user.reseau, type_portefeuille='cryptomonnaie').first()
         
         # Créer une notification pour l'admin
         notification = Notification(
@@ -746,4 +746,5 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
