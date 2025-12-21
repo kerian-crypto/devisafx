@@ -778,7 +778,7 @@ def transaction_status(transaction_id):
                          adresse_admin=adresse_admin,
                          formater_montant=formater_montant)
 
-@app.route('/admin_transation_details')
+@admin_bp.route('/admin_transation_details')
 # Route admin pour les détails de transaction
 @login_required
 def admin_transaction_details(transaction_id):
@@ -829,3 +829,4 @@ def admin_transaction_details(transaction_id):
 def formater_montant(montant):
     """Formater un montant avec des espaces comme séparateurs de milliers"""
     return "{:,.0f}".format(montant).replace(',', ' ')
+
