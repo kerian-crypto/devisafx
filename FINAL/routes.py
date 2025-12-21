@@ -153,7 +153,7 @@ def buy():
         db.session.add(notification)
         db.session.commit()
         
-        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction), numero_admin=numero_admin)
+        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
     
     return render_template('buy.html', 
                          form=form,
@@ -829,4 +829,5 @@ def admin_transaction_details(transaction_id):
 def formater_montant(montant):
     """Formater un montant avec des espaces comme séparateurs de milliers"""
     return "{:,.0f}".format(montant).replace(',', ' ')
+
 
