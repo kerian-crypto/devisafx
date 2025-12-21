@@ -736,7 +736,7 @@ def mark_notification_read(notification_id):
     db.session.commit()
     
     return jsonify({'success': True})
-# Vos autres imports et blueprints...
+# Vos autres imports et blueprints
 
 @login_required
 def transaction_status(transaction_id):
@@ -778,7 +778,7 @@ def transaction_status(transaction_id):
                          adresse_admin=adresse_admin,
                          formater_montant=formater_montant)
 
-@admin_bp.route('/admin_transation_details')
+@admin_bp.route('/admin_transations_details')
 # Route admin pour les détails de transaction
 @login_required
 def admin_transaction_details(transaction_id):
@@ -829,5 +829,6 @@ def admin_transaction_details(transaction_id):
 def formater_montant(montant):
     """Formater un montant avec des espaces comme séparateurs de milliers"""
     return "{:,.0f}".format(montant).replace(',', ' ')
+
 
 
