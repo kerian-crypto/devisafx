@@ -35,7 +35,7 @@ class Transaction(db.Model):
     reseau = db.Column(db.String(50), nullable=False)
     
     # Adresses utilisateur
-    adresse_wallet_utilisateur = db.Column(db.String(200))  # Adresse crypto de l'utilisateur
+    ALTER TABLE transactions ADD COLUMN adresse_wallet_utilisateur VARCHAR(255);  # Adresse crypto de l'utilisateur
     numero_mobile_utilisateur = db.Column(db.String(20))    # Numéro mobile de l'utilisateur
     
     # Références aux portefeuilles admin
@@ -81,4 +81,5 @@ class Notification(db.Model):
     message = db.Column(db.Text, nullable=False)
     est_lue = db.Column(db.Boolean, default=False)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
+
 
