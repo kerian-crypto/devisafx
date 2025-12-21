@@ -383,7 +383,7 @@ def admin_wallets():
     return render_template('admin_wallets.html', portefeuilles=portefeuilles)
 
 @admin_bp.route('/wallets/add', methods=['GET', 'POST'])
-@admin_required
+@login_required
 def wallets():
     """Gestion des portefeuilles admin"""
     if request.method == 'POST':
@@ -408,7 +408,7 @@ def wallets():
     return render_template('admin_wallets.html', portefeuilles=portefeuilles)
 
 @admin_bp.route('/admin/wallet/<int:id>/toggle', methods=['POST'])
-@admin_required
+@login_required
 def toggle_portefeuille(id):
     """Activer/désactiver un portefeuille"""
     portefeuille = PortefeuilleAdmin.query.get_or_404(id)
@@ -428,6 +428,7 @@ def mark_notification_read(notification_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
 
 
 
