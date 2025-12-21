@@ -150,6 +150,7 @@ def buy():
         
         db.session.add(transaction)
         db.session.commit()
+        numero_admin= PortefeuilleAdmin.query.filter_by(reseau=current_user.reseau, type_portefeuille='mobile_money').first()
         
         # Créer une notification pour l'admin
         notification = Notification(
@@ -160,7 +161,7 @@ def buy():
         db.session.add(notification)
         db.session.commit()
         
-        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
+        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction), numero_admin=numero_admin)
     
     return render_template('buy.html', 
                          form=form,
@@ -203,6 +204,7 @@ def sell():
         
         db.session.add(transaction)
         db.session.commit()
+        numero_admin= PortefeuilleAdmin.query.filter_by(reseau=current_user.reseau, type_portefeuille='mobile_money').first()
         
         # Créer une notification pour l'admin
         notification = Notification(
@@ -213,7 +215,7 @@ def sell():
         db.session.add(notification)
         db.session.commit()
         
-        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
+        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction), numero_admin=numero_admin)
     
     return render_template('sell.html', 
                          form=form,
@@ -744,3 +746,4 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
