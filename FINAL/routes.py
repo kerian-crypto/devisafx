@@ -1,96 +1,80 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, session
-from flask_login import login_required, current_user, logout_user, login_user
+from flask_login import login_required, current_user, logout_user
+from flask_mail import Message
 from datetime import datetime, date
 import uuid
 import os
 
 from models import db, Utilisateur, Transaction, PortefeuilleAdmin, TauxJournalier, Notification
-from forms import FormulaireInscription, FormulaireConnexion, FormulaireAchat, FormulaireVente, FormulaireCalculTaux, FormulaireTaux
+from forms import FormulaireInscription, FormulaireConnexion, FormulaireAchat, FormulaireVente, FormulaireCalculTaux
 from utils import calculer_taux_vente_usdt, calculer_taux_achat_usdt, generer_numero_marchand, formater_montant
 from auth import auth_bp
 from config import Config
 
 main_bp = Blueprint('main', __name__)
-
-
-from itsdangerous import SignatureExpired, BadSignature
-import hashlib
-
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
 @main_bp.route('/')
 def index():
     """Page d'accueil"""
-    if current_user.is_authenticated:
-        if current_user.est_admin:
-            return redirect(url_for('admin.admin_dashbord'))
-        return redirect(url_for('main.dashboard'))
     return render_template('index.html')
 
-# Modifier la route register pour envoyer l'email de vérification
 @main_bp.route('/register', methods=['GET', 'POST'])
 def register():
     """Inscription"""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
     
-    form = FormulaireInscription()
+    formulaire = FormulaireInscription()
     
-    if form.validate_on_submit():
+    if formulaire.validate_on_submit():
         # Vérifier si l'email existe déjà
-        if Utilisateur.query.filter_by(email=form.email.data).first():
+        if Utilisateur.query.filter_by(email=formulaire.email.data).first():
             flash('Cet email est déjà utilisé.', 'error')
-            return redirect(url_for('main.register'))
+            return redirect(url_for('register'))
         
         # Vérifier si le téléphone existe déjà
-        if Utilisateur.query.filter_by(telephone=form.telephone.data).first():
+        if Utilisateur.query.filter_by(telephone=formulaire.telephone.data).first():
             flash('Ce numéro de téléphone est déjà utilisé.', 'error')
-            return redirect(url_for('main.register'))
+            return redirect(url_for('register'))
         
         # Créer l'utilisateur
         utilisateur = Utilisateur(
-            nom=form.nom.data,
-            telephone=form.telephone.data,
-            email=form.email.data,
-            pays=form.pays.data,
-            mot_de_passe_hash=hashlib.sha256(form.mot_de_passe.data.encode()).hexdigest()
+            nom=formulaire.nom.data,
+            telephone=formulaire.telephone.data,
+            email=formulaire.email.data,
+            pays=formulaire.pays.data,
+            mot_de_passe_hash=formulaire.mot_de_passe.data  # À hasher en production
         )
         
         db.session.add(utilisateur)
         db.session.commit()
+        
+        flash('Inscription réussie! Veuillez vous connecter.', 'success')
+        return redirect(url_for('login'))
     
-    return render_template('register.html', form=form)
-    
+    return render_template('register.html', formulaire=formulaire)
 
-
-# Ajouter une vérification dans la route login
 @main_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Connexion"""
     if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
+        return redirect(url_for('dashboard'))
     
-    form = FormulaireConnexion()
+    formulaire = FormulaireConnexion()
     
-    if form.validate_on_submit():
-        utilisateur = Utilisateur.query.filter_by(email=form.email.data).first()
+    if formulaire.validate_on_submit():
+        utilisateur = Utilisateur.query.filter_by(email=formulaire.email.data).first()
         
-        # Vérifier le mot de passe (en production, utiliser bcrypt)
-        mot_de_passe_hash = hashlib.sha256(form.mot_de_passe.data.encode()).hexdigest()
-
-        if utilisateur and utilisateur.mot_de_passe_hash == mot_de_passe_hash:
-            if utilisateur.est_admin==True:
-                login_user(utilisateur)
-                flash('Connexion réussie en tant qu\'administrateur!', 'success')
-                return redirect(url_for('admin.admin_dashboard'))
+        if utilisateur and utilisateur.mot_de_passe_hash == formulaire.mot_de_passe.data:
             login_user(utilisateur)
             flash('Connexion réussie!', 'success')
             next_page = request.args.get('next')
-            return redirect(next_page) if next_page else redirect(url_for('main.dashboard'))
+            return redirect(next_page) if next_page else redirect(url_for('dashboard'))
         else:
             flash('Email ou mot de passe incorrect.', 'error')
     
-    return render_template('login.html', form=form)
+    return render_template('login.html', formulaire=formulaire)
 
 @main_bp.route('/dashboard')
 @login_required
@@ -112,23 +96,20 @@ def dashboard():
 @login_required
 def buy():
     """Achat de USDT"""
+    formulaire = FormulaireAchat()
     
-    # Vérifier si les taux sont définis pour aujourd'hui
-    taux_du_jour = TauxJournalier.query.filter_by(date=date.today()).first()
-    if not taux_du_jour:
-        flash('Les taux du jour ne sont pas encore définis. Veuillez réessayer plus tard.', 'error')
-        return redirect(url_for('main.dashboard'))
+    # Récupérer le taux du jour
+    taux_du_jour = TauxJournalier.query.order_by(TauxJournalier.date.desc()).first()
+    taux_vente = taux_du_jour.taux_vente if taux_du_jour else Config.DEFAULT_USDT_RATE
     
-    form = FormulaireAchat()
-    taux_vente = taux_du_jour.taux_vente
-    
-    if form.validate_on_submit():
+    if formulaire.validate_on_submit():
         # Calculer le montant en USDT
-        montant_xaf = form.montant_xaf.data
-        montant_usdt = montant_xaf / taux_vente
+        montant_xaf = formulaire.montant_xaf.data
+        taux_final = taux_vente * (1 + Config.PROFIT_MARGIN)
+        montant_usdt = montant_xaf / taux_final
         
         # Générer un numéro marchand
-        numero_marchand = generer_numero_marchand(current_user.pays, form.operateur_mobile.data)
+        numero_marchand = generer_numero_marchand(current_user.pays, formulaire.operateur_mobile.data)
         
         # Créer la transaction
         transaction = Transaction(
@@ -136,17 +117,16 @@ def buy():
             type_transaction='achat',
             montant_xaf=montant_xaf,
             montant_usdt=round(montant_usdt, 2),
-            reseau=form.reseau.data,
-            adresse_wallet=form.adresse_wallet.data,
-            operateur_mobile=form.operateur_mobile.data,
+            reseau=formulaire.reseau.data,
+            adresse_wallet=formulaire.adresse_wallet.data,
+            operateur_mobile=formulaire.operateur_mobile.data,
             numero_marchand=numero_marchand,
-            taux_applique=taux_vente,
+            taux_applique=taux_final,
             statut='en_attente'
         )
         
         db.session.add(transaction)
         db.session.commit()
-
         
         # Créer une notification pour l'admin
         notification = Notification(
@@ -157,32 +137,30 @@ def buy():
         db.session.add(notification)
         db.session.commit()
         
-        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction), numero_admin=numero_admin)
+        return redirect(url_for('transaction_status', transaction_id=transaction.identifiant_transaction))
     
     return render_template('buy.html', 
-                         form=form,
+                         formulaire=formulaire,
                          taux_vente=taux_vente)
 
 @main_bp.route('/sell', methods=['GET', 'POST'])
 @login_required
 def sell():
     """Vente de USDT"""
-    # Vérifier si les taux sont définis pour aujourd'hui
-    taux_du_jour = TauxJournalier.query.filter_by(date=date.today()).first()
-    if not taux_du_jour:
-        flash('Les taux du jour ne sont pas encore définis. Veuillez réessayer plus tard.', 'error')
-        return redirect(url_for('main.dashboard'))
+    formulaire = FormulaireVente()
     
-    form = FormulaireVente()
-    taux_achat = taux_du_jour.taux_achat
+    # Récupérer le taux du jour
+    taux_du_jour = TauxJournalier.query.order_by(TauxJournalier.date.desc()).first()
+    taux_achat = taux_du_jour.taux_achat if taux_du_jour else Config.DEFAULT_USDT_RATE
     
-    if form.validate_on_submit():
+    if formulaire.validate_on_submit():
         # Calculer le montant en XAF
-        montant_usdt = form.montant_usdt.data
-        montant_xaf = montant_usdt * taux_achat
+        montant_usdt = formulaire.montant_usdt.data
+        taux_final = taux_achat * (1 - Config.PROFIT_MARGIN)
+        montant_xaf = montant_usdt * taux_final
         
         # Générer un numéro marchand pour le virement
-        numero_marchand = generer_numero_marchand(current_user.pays, form.operateur_mobile.data)
+        numero_marchand = generer_numero_marchand(current_user.pays, formulaire.operateur_mobile.data)
         
         # Créer la transaction
         transaction = Transaction(
@@ -190,11 +168,11 @@ def sell():
             type_transaction='vente',
             montant_xaf=round(montant_xaf, 2),
             montant_usdt=montant_usdt,
-            reseau=form.reseau.data,
-            adresse_wallet=form.adresse_wallet.data,
-            operateur_mobile=form.operateur_mobile.data,
+            reseau=formulaire.reseau.data,
+            adresse_wallet=formulaire.adresse_wallet.data,
+            operateur_mobile=formulaire.operateur_mobile.data,
             numero_marchand=numero_marchand,
-            taux_applique=taux_achat,
+            taux_applique=taux_final,
             statut='en_attente'
         )
         
@@ -210,10 +188,10 @@ def sell():
         db.session.add(notification)
         db.session.commit()
         
-        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
+        return redirect(url_for('transaction_status', transaction_id=transaction.identifiant_transaction))
     
     return render_template('sell.html', 
-                         form=form,
+                         formulaire=formulaire,
                          taux_achat=taux_achat)
 
 @main_bp.route('/transaction/<transaction_id>')
@@ -232,26 +210,26 @@ def transaction_status(transaction_id):
 @main_bp.route('/calculate', methods=['GET', 'POST'])
 def calculate():
     """Calculateur de taux"""
-    form = FormulaireCalculTaux()
+    formulaire = FormulaireCalculTaux()
     resultat = None
     erreur = None
     
-    if form.validate_on_submit():
-        if form.type_calcul.data == 'vente':
+    if formulaire.validate_on_submit():
+        if formulaire.type_calcul.data == 'vente':
             resultat, erreur = calculer_taux_vente_usdt(
-                form.taux_mondial.data,
-                form.benefice.data,
-                form.montant.data
+                formulaire.taux_mondial.data,
+                formulaire.benefice.data,
+                formulaire.montant.data
             )
         else:
             resultat, erreur = calculer_taux_achat_usdt(
-                form.taux_mondial.data,
-                form.benefice.data,
-                form.montant.data
+                formulaire.taux_mondial.data,
+                formulaire.benefice.data,
+                formulaire.montant.data
             )
     
     return render_template('calculate.html', 
-                         form=form,
+                         formulaire=formulaire,
                          resultat=resultat,
                          erreur=erreur)
 
@@ -297,7 +275,6 @@ def admin_dashboard():
         admin_id=current_user.id,
         est_lue=False
     ).order_by(Notification.date_creation.desc()).all()
-    print(dernieres_transactions)
     
     return render_template('admin_dashboard.html',
                          total_utilisateurs=total_utilisateurs,
@@ -438,295 +415,6 @@ def delete_wallet(wallet_id):
     
     return jsonify({'success': True})
 
-# routes.py - Ajouter ces routes dans la section admin_bp
-from datetime import datetime, date, timedelta
-import json
-
-@admin_bp.route('/rates', methods=['GET', 'POST'])
-@login_required
-def admin_rates():
-    """Gestion des taux de change par l'admin"""
-    if not current_user.est_admin:
-        flash('Accès non autorisé.', 'error')
-        return redirect(url_for('main.dashboard'))
-    
-    form = FormulaireTaux()
-    
-    # Récupérer les taux d'aujourd'hui
-    taux_aujourdhui = TauxJournalier.query.filter_by(date=date.today()).first()
-    
-    # Récupérer l'historique des taux (30 derniers jours)
-    historique_taux = TauxJournalier.query.order_by(
-        TauxJournalier.date.desc()
-    ).limit(30).all()
-    
-    # Statistiques des taux
-    taux_moyen_achat = db.session.query(db.func.avg(TauxJournalier.taux_achat)).scalar() or 0
-    taux_moyen_vente = db.session.query(db.func.avg(TauxJournalier.taux_vente)).scalar() or 0
-    
-    if form.validate_on_submit():
-        taux_achat = form.taux_achat.data
-        taux_vente = form.taux_vente.data
-        date_application = form.date_application.data or date.today()
-        
-        # Validation : taux de vente doit être supérieur au taux d'achat
-        if taux_vente <= taux_achat:
-            flash('Le taux de vente doit être supérieur au taux d\'achat.', 'error')
-            return render_template('admin_rates.html',
-                                 form=form,
-                                 taux_aujourdhui=taux_aujourdhui,
-                                 historique_taux=historique_taux,
-                                 taux_moyen_achat=round(taux_moyen_achat, 2),
-                                 taux_moyen_vente=round(taux_moyen_vente, 2),
-                                 today=date.today())
-        
-        # Vérifier si un taux existe déjà pour cette date
-        taux_existant = TauxJournalier.query.filter_by(date=date_application).first()
-        
-        if taux_existant:
-            # Mettre à jour le taux existant
-            taux_existant.taux_achat = taux_achat
-            taux_existant.taux_vente = taux_vente
-            taux_existant.timestamp = datetime.utcnow()
-            message = 'Taux mis à jour avec succès pour le '
-        else:
-            # Créer un nouveau taux
-            nouveau_taux = TauxJournalier(
-                taux_achat=taux_achat,
-                taux_vente=taux_vente,
-                date=date_application
-            )
-            db.session.add(nouveau_taux)
-            message = 'Nouveau taux ajouté avec succès pour le '
-        
-        db.session.commit()
-        
-        # Notifier tous les utilisateurs via notification
-        if date_application == date.today():
-            utilisateurs = Utilisateur.query.filter_by(est_actif=True).all()
-            for utilisateur in utilisateurs:
-                notification = Notification(
-                    utilisateur_id=utilisateur.id,
-                    type_notification='taux_mis_a_jour',
-                    message=f'Nouveaux taux disponibles : Achat {taux_achat} XAF | Vente {taux_vente} XAF'
-                )
-                db.session.add(notification)
-            db.session.commit()
-        
-        flash(f'{message} {date_application.strftime("%d/%m/%Y")}.', 'success')
-        return redirect(url_for('admin.admin_rates'))
-    
-    # Pré-remplir le formulaire avec les taux d'aujourd'hui
-    if taux_aujourdhui and not form.is_submitted():
-        form.taux_achat.data = taux_aujourdhui.taux_achat
-        form.taux_vente.data = taux_aujourdhui.taux_vente
-    
-    return render_template('admin_rates.html',
-                         form=form,
-                         taux_aujourdhui=taux_aujourdhui,
-                         historique_taux=historique_taux,
-                         taux_moyen_achat=round(taux_moyen_achat, 2),
-                         taux_moyen_vente=round(taux_moyen_vente, 2),
-                         today=date.today())
-
-@admin_bp.route('/api/rates/history')
-@login_required
-def rates_history_api():
-    """API pour obtenir l'historique des taux (pour graphique)"""
-    if not current_user.est_admin:
-        return jsonify({'error': 'Non autorisé'}), 403
-    
-    # Récupérer les 60 derniers jours
-    jours = request.args.get('days', 30, type=int)
-    date_debut = date.today() - timedelta(days=jours)
-    
-    historique = TauxJournalier.query.filter(
-        TauxJournalier.date >= date_debut
-    ).order_by(TauxJournalier.date).all()
-    
-    data = {
-        'dates': [t.date.strftime('%Y-%m-%d') for t in historique],
-        'achat': [float(t.taux_achat) for t in historique],
-        'vente': [float(t.taux_vente) for t in historique],
-        'ecart': [float(t.taux_vente - t.taux_achat) for t in historique]
-    }
-    
-    return jsonify(data)
-
-@admin_bp.route('/api/rates/update', methods=['POST'])
-@login_required
-def update_rates_api():
-    """API pour mettre à jour les taux (AJAX)"""
-    if not current_user.est_admin:
-        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
-    
-    data = request.get_json()
-    
-    taux_achat = data.get('taux_achat')
-    taux_vente = data.get('taux_vente')
-    date_application = data.get('date_application')
-    
-    if not taux_achat or not taux_vente:
-        return jsonify({'success': False, 'message': 'Données manquantes'})
-    
-    try:
-        taux_achat = float(taux_achat)
-        taux_vente = float(taux_vente)
-        
-        if taux_vente <= taux_achat:
-            return jsonify({'success': False, 'message': 'Le taux de vente doit être supérieur au taux d\'achat'})
-        
-        if date_application:
-            date_application = datetime.strptime(date_application, '%Y-%m-%d').date()
-        else:
-            date_application = date.today()
-        
-        # Vérifier si un taux existe déjà pour cette date
-        taux_existant = TauxJournalier.query.filter_by(date=date_application).first()
-        
-        if taux_existant:
-            taux_existant.taux_achat = taux_achat
-            taux_existant.taux_vente = taux_vente
-            taux_existant.timestamp = datetime.utcnow()
-            message = 'Taux mis à jour'
-        else:
-            nouveau_taux = TauxJournalier(
-                taux_achat=taux_achat,
-                taux_vente=taux_vente,
-                date=date_application
-            )
-            db.session.add(nouveau_taux)
-            message = 'Nouveau taux ajouté'
-        
-        db.session.commit()
-        
-        # Si c'est pour aujourd'hui, notifier les utilisateurs
-        if date_application == date.today():
-            from email_utils import send_rate_update_notification
-            # Envoyer des notifications push ou emails aux utilisateurs actifs
-            pass
-        
-        return jsonify({
-            'success': True,
-            'message': f'{message} avec succès',
-            'taux': {
-                'achat': taux_achat,
-                'vente': taux_vente,
-                'date': date_application.strftime('%Y-%m-%d')
-            }
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
-
-@admin_bp.route('/rates/delete/<int:rate_id>', methods=['POST'])
-@login_required
-def delete_rate(rate_id):
-    """Supprimer un taux de l'historique"""
-    if not current_user.est_admin:
-        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
-    
-    taux = TauxJournalier.query.get_or_404(rate_id)
-    
-    # Ne pas permettre la suppression du taux d'aujourd'hui
-    if taux.date == date.today():
-        return jsonify({'success': False, 'message': 'Impossible de supprimer le taux du jour actuel'})
-    
-    try:
-        db.session.delete(taux)
-        db.session.commit()
-        return jsonify({'success': True, 'message': 'Taux supprimé avec succès'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
-
-@admin_bp.route('/rates/duplicate/<int:rate_id>', methods=['POST'])
-@login_required
-def duplicate_rate(rate_id):
-    """Dupliquer un taux pour une nouvelle date"""
-    if not current_user.est_admin:
-        return jsonify({'success': False, 'message': 'Non autorisé'}), 403
-    
-    taux_source = TauxJournalier.query.get_or_404(rate_id)
-    nouvelle_date = request.form.get('nouvelle_date')
-    
-    if not nouvelle_date:
-        return jsonify({'success': False, 'message': 'Date manquante'})
-    
-    try:
-        nouvelle_date = datetime.strptime(nouvelle_date, '%Y-%m-%d').date()
-        
-        # Vérifier si un taux existe déjà pour cette date
-        taux_existant = TauxJournalier.query.filter_by(date=nouvelle_date).first()
-        
-        if taux_existant:
-            return jsonify({'success': False, 'message': 'Un taux existe déjà pour cette date'})
-        
-        nouveau_taux = TauxJournalier(
-            taux_achat=taux_source.taux_achat,
-            taux_vente=taux_source.taux_vente,
-            date=nouvelle_date
-        )
-        
-        db.session.add(nouveau_taux)
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Taux dupliqué pour le {nouvelle_date.strftime("%d/%m/%Y")}',
-            'taux': {
-                'achat': taux_source.taux_achat,
-                'vente': taux_source.taux_vente,
-                'date': nouvelle_date.strftime('%Y-%m-%d')
-            }
-        })
-        
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
-
-@admin_bp.route('/rates/export')
-@login_required
-def export_rates():
-    """Exporter l'historique des taux en CSV/Excel"""
-    if not current_user.est_admin:
-        flash('Accès non autorisé.', 'error')
-        return redirect(url_for('main.dashboard'))
-    
-    # Récupérer tous les taux
-    taux = TauxJournalier.query.order_by(TauxJournalier.date.desc()).all()
-    
-    # Créer un CSV
-    import csv
-    from io import StringIO
-    
-    output = StringIO()
-    writer = csv.writer(output)
-    
-    # En-têtes
-    writer.writerow(['Date', 'Taux Achat (XAF)', 'Taux Vente (XAF)', 'Écart (XAF)', 'Marge (%)'])
-    
-    # Données
-    for t in taux:
-        ecart = t.taux_vente - t.taux_achat
-        marge = (ecart / t.taux_achat) * 100 if t.taux_achat > 0 else 0
-        writer.writerow([
-            t.date.strftime('%Y-%m-%d'),
-            t.taux_achat,
-            t.taux_vente,
-            round(ecart, 2),
-            round(marge, 2)
-        ])
-    
-    output.seek(0)
-    
-    from flask import make_response
-    response = make_response(output.getvalue())
-    response.headers["Content-Disposition"] = "attachment; filename=taux_devisa_fx.csv"
-    response.headers["Content-type"] = "text/csv"
-    return response
-
 @admin_bp.route('/notification/<int:notification_id>/read', methods=['POST'])
 @login_required
 def mark_notification_read(notification_id):
@@ -739,5 +427,4 @@ def mark_notification_read(notification_id):
     notification.est_lue = True
     db.session.commit()
     
-
     return jsonify({'success': True})
