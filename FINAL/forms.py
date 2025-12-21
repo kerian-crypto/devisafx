@@ -128,4 +128,109 @@ class FormulaireTaux(FlaskForm):
     date_application = DateField('Date d\'application (optionnel)', 
                                 format='%Y-%m-%d',
                                 validators=[Optional()])
+
     soumettre = SubmitField('Mettre à jour les taux')
+
+class FormulaireAjoutWallet(FlaskForm):
+    type_portefeuille = SelectField('Type de portefeuille *', choices=[
+        ('', 'Sélectionner...'),
+        ('crypto', 'Cryptomonnaie'),
+        ('mobile_money', 'Mobile Money')
+    ], validators=[DataRequired(message='Le type de portefeuille est requis')])
+    
+    reseau = SelectField('Réseau/Opérateur *', choices=[], validators=[
+        DataRequired(message='Le réseau/opérateur est requis')
+    ])
+    
+    adresse = StringField('Adresse/Numéro *', validators=[
+        DataRequired(message='L\'adresse/numéro est requis'),
+        Length(min=5, max=200, message='Doit contenir entre 5 et 200 caractères')
+    ])
+    
+    pays = SelectField('Pays (optionnel)', choices=[
+        ('', 'Tous pays'),
+        ('CM', 'Cameroun'),
+        ('TG', 'Togo'),
+        ('GA', 'Gabon'),
+        ('CF', 'République Centrafricaine'),
+        ('CD', 'RD Congo')
+    ], validators=[Optional()])
+    
+    est_actif = SelectField('Statut', choices=[
+        ('actif', 'Actif'),
+        ('inactif', 'Inactif')
+    ], default='actif', validators=[DataRequired()])
+    
+    soumettre = SubmitField('Ajouter le portefeuille')
+    
+    def __init__(self, *args, **kwargs):
+        super(FormulaireAjoutWallet, self).__init__(*args, **kwargs)
+        # Initialiser les choix pour le réseau
+        self.reseau.choices = [
+            ('', 'Sélectionner...'),
+            ('TRC20', 'TRC20 (Tron)'),
+            ('USDT_TON', 'USDT_TON (Toncoin)'),
+            ('USDT_APTOS', 'USDT_APTOS (Aptos)'),
+            ('ETHEREUM', 'Ethereum'),
+            ('SOL', 'Solana'),
+            ('MTN', 'MTN Mobile Money'),
+            ('ORANGE', 'Orange Money'),
+            ('MOOV', 'Moov Money'),
+            ('TOGOCEL', 'Togocel Money')
+        ]
+    
+    def validate_reseau(self, field):
+        if field.data:
+            # Vérifier la cohérence entre type_portefeuille et réseau
+            reseaux_crypto = ['TRC20', 'USDT_TON', 'USDT_APTOS', 'ETHEREUM', 'SOL']
+            reseaux_mobile = ['MTN', 'ORANGE', 'MOOV', 'TOGOCEL']
+            
+            type_portefeuille = self.type_portefeuille.data
+            
+            if type_portefeuille == 'crypto' and field.data not in reseaux_crypto:
+                raise ValidationError('Ce réseau n\'est pas valide pour un portefeuille crypto')
+            
+            if type_portefeuille == 'mobile_money' and field.data not in reseaux_mobile:
+                raise ValidationError('Cet opérateur n\'est pas valide pour le mobile money')
+    
+    def validate_adresse(self, field):
+        import re
+        adresse = field.data.strip()
+        
+        # Validation basique pour éviter les caractères dangereux
+        if re.search(r'[<>"\';&]', adresse):
+            raise ValidationError('L\'adresse contient des caractères non autorisés')
+        
+        type_portefeuille = self.type_portefeuille.data
+        
+        if type_portefeuille == 'mobile_money':
+            # Validation pour les numéros de téléphone
+            if not re.match(r'^\+?[\d\s\-\(\)]+$', adresse):
+                raise ValidationError('Format de numéro mobile invalide')
+            
+            # Nettoyer le numéro pour vérifier la longueur
+            cleaned = re.sub(r'[^\d+]', '', adresse)
+            if len(cleaned) < 9:
+                raise ValidationError('Le numéro mobile semble trop court')
+                
+        elif type_portefeuille == 'crypto':
+            # Validation basique pour les adresses crypto
+            if len(adresse) < 20:
+                raise ValidationError('L\'adresse crypto semble trop courte')
+            
+            # Vérifier les formats courants
+            reseau = self.reseau.data
+            
+            if reseau == 'ETHEREUM' and not adresse.startswith('0x'):
+                raise ValidationError('Les adresses Ethereum doivent commencer par 0x')
+            
+            if reseau == 'TRC20' and not adresse.startswith('T'):
+                raise ValidationError('Les adresses TRC20 (Tron) doivent commencer par T')
+            
+            # Vérification de longueur spécifique
+            if reseau == 'ETHEREUM' and len(adresse) != 42:
+                raise ValidationError('Les adresses Ethereum doivent contenir 42 caractères')
+            
+            if reseau == 'TRC20' and len(adresse) != 34:
+                raise ValidationError('Les adresses TRC20 doivent contenir 34 caractères')
+    
