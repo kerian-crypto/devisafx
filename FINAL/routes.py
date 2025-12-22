@@ -184,7 +184,7 @@ def sell():
         montant_xaf = montant_usdt * taux_achat
 
         # ✅ CORRECTION : récupération correcte
-        portefeuille = PortefeuilleAdmin.get_numero_marchand(form.operateur_mobile.data)
+        portefeuille = PortefeuilleAdmin.get_adresse_crypto(form.reseau.data)
 
         if not portefeuille:
             flash("Aucun numéro marchand disponible.", "error")
@@ -745,6 +745,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
