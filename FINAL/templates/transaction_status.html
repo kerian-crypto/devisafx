@@ -177,7 +177,7 @@
                             <div class="alert alert-danger">
                                 <p class="mb-2"><strong>Adresse de réception :</strong></p>
                                 <h5 class="text-center mb-3">
-                                    <code id="wallet-address">{{ transaction.numero_marchand }}</code>
+                                    <code id="wallet-address">{{ transaction.adresse_marchand }}</code>
                                     <button class="btn btn-sm btn-outline-secondary ms-2 copy-wallet" data-address="{{ transaction.adresse_wallet }}">
                                         <i class="fas fa-copy"></i>
                                     </button>
@@ -239,8 +239,8 @@
                                         <td>{{ transaction.numero_mobile }}</td>
                                     </tr>
                                     <tr>
-                                        <th>NUMERO MARCHAND:</th>
-                                        <td>{{ transaction.numero_marchand }}</td>
+                                        <th>Adresse MARCHAND:</th>
+                                        <td>{{ transaction.adresse_marchand }}</td>
                                     </tr>
                                     {% endif %}
                                 </table>
@@ -410,4 +410,5 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
 </script>
 
 {% endblock %}
+
 
