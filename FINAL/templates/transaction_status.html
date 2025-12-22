@@ -362,7 +362,17 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong> à l'adresse <code>{{ adresse|truncate(20) }}</code> sur le réseau <strong>{{ transaction.reseau }}</strong> ?</p>
+                <p>
+                    Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong>
+                    {% if adresse %}
+                        à l'adresse <code>{{ adresse|truncate(20) }}</code>
+                    {% else %}
+                        à une adresse non définie
+                    {% endif %}
+                        sur le réseau <strong>{{ transaction.reseau }}</strong> ?
+                </p>
+            </div>
+
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Après confirmation, notre équipe vérifiera la transaction et procédera à l'envoi des XAF.
@@ -410,6 +420,7 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
 </script>
 
 {% endblock %}
+
 
 
 
