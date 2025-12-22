@@ -112,11 +112,10 @@ def dashboard():
                          solde_usdt=round(solde_usdt, 2),
                          formater_montant=formater_montant)
 
+# Achat de USDT
 @main_bp.route('/buy', methods=['GET', 'POST'])
 @login_required
 def buy():
-    """Achat de USDT"""
-
     taux_du_jour = TauxJournalier.query.filter_by(date=date.today()).first()
     if not taux_du_jour:
         flash("Les taux du jour ne sont pas définis.", "error")
@@ -129,14 +128,13 @@ def buy():
         montant_xaf = form.montant_xaf.data
         montant_usdt = montant_xaf / taux_vente
 
-        # ✅ CORRECTION : récupérer UN portefeuille actif
         portefeuille = PortefeuilleAdmin.get_numero_marchand(form.operateur_mobile.data)
-        numero=porteufeuille.adresse
-        adresse=None
-
         if not portefeuille:
             flash("Aucun numéro marchand disponible.", "error")
             return redirect(url_for('main.dashboard'))
+
+        numero = portefeuille.adresse
+        adresse = None  # facultatif pour l'achat
 
         transaction = Transaction(
             utilisateur_id=current_user.id,
@@ -147,11 +145,9 @@ def buy():
             reseau=form.reseau.data,
             adresse_wallet=form.adresse_wallet.data,
             operateur_mobile=form.operateur_mobile.data,
-            # ✅ CORRECTION MAJEURE
-            numero_marchand=None,
+            numero_marchand=numero,
             statut='en_attente'
         )
-
         db.session.add(transaction)
         db.session.commit()
 
@@ -163,16 +159,19 @@ def buy():
         db.session.add(notification)
         db.session.commit()
 
+        # ✅ Passage des valeurs facultatives en query string
         return redirect(url_for('main.transaction_status',
-                                transaction_id=transaction.identifiant_transaction, numero=numero, adresse=adresse))
+                                transaction_id=transaction.identifiant_transaction,
+                                numero=numero,
+                                adresse=adresse))
 
     return render_template('buy.html', form=form, taux_vente=taux_vente)
 
+
+# Vente de USDT
 @main_bp.route('/sell', methods=['GET', 'POST'])
 @login_required
 def sell():
-    """Vente de USDT"""
-
     taux_du_jour = TauxJournalier.query.filter_by(date=date.today()).first()
     if not taux_du_jour:
         flash("Les taux du jour ne sont pas définis.", "error")
@@ -185,14 +184,13 @@ def sell():
         montant_usdt = form.montant_usdt.data
         montant_xaf = montant_usdt * taux_achat
 
-        # ✅ CORRECTION : récupération correcte
         portefeuille = PortefeuilleAdmin.get_adresse_crypto(form.reseau.data)
-        adresse=portefeuille.adresse
-        numero=None
-
         if not portefeuille:
-            flash("Aucun numéro marchand disponible.", "error")
+            flash("Aucune adresse crypto disponible.", "error")
             return redirect(url_for('main.dashboard'))
+
+        adresse = portefeuille.adresse
+        numero = None  # facultatif pour la vente
 
         transaction = Transaction(
             utilisateur_id=current_user.id,
@@ -203,11 +201,9 @@ def sell():
             reseau=form.reseau.data,
             adresse_wallet=form.adresse_wallet.data,
             operateur_mobile=form.operateur_mobile.data,
-            # ✅ CORRECTION MAJEURE
-            numero_marchand=None,
+            numero_marchand=numero,
             statut='en_attente'
         )
-
         db.session.add(transaction)
         db.session.commit()
 
@@ -220,24 +216,30 @@ def sell():
         db.session.commit()
 
         return redirect(url_for('main.transaction_status',
-                                transaction_id=transaction.identifiant_transaction,numero=numero, adresse=adresse))
+                                transaction_id=transaction.identifiant_transaction,
+                                numero=numero,
+                                adresse=adresse))
 
-    return render_template('sell.html', form=form, taux_achat=taux_achat)
 
+# Statut de la transaction
 @main_bp.route('/transaction/<transaction_id>')
 @login_required
-def transaction_status(transaction_id, numero, adresse):
+def transaction_status(transaction_id):
     """Statut de la transaction"""
     transaction = Transaction.query.filter_by(
         identifiant_transaction=transaction_id,
         utilisateur_id=current_user.id
     ).first_or_404()
+
+    # Récupérer numero et adresse depuis la query string (facultatif)
     numero = request.args.get('numero')
     adresse = request.args.get('adresse')
-    
-    return render_template('transaction_status.html', 
-                         transaction=transaction,
-                         formater_montant=formater_montant)
+
+    return render_template('transaction_status.html',
+                           transaction=transaction,
+                           numero=numero,
+                           adresse=adresse,
+                           formater_montant=formater_montant)
 
 @main_bp.route('/calculate', methods=['GET', 'POST'])
 def calculate():
@@ -751,6 +753,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
