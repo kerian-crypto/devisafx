@@ -62,7 +62,6 @@ class Transaction(db.Model):
     # Informations mobile money
     operateur_mobile = db.Column(db.String(50))  # MTN, ORANGE, etc.
     numero_marchand = db.Column(db.String(20))  # Numéro marchand pour le paiement
-    adresse_marchand=db.Column(db.String(100))
     
     # Statut et validation
     statut = db.Column(
