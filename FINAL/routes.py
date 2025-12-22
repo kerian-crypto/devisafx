@@ -132,6 +132,7 @@ def buy():
         # ✅ CORRECTION : récupérer UN portefeuille actif
         portefeuille = PortefeuilleAdmin.get_numero_marchand(form.operateur_mobile.data)
         numero=porteufeuille.adresse
+        adresse=None
 
         if not portefeuille:
             flash("Aucun numéro marchand disponible.", "error")
@@ -163,7 +164,7 @@ def buy():
         db.session.commit()
 
         return redirect(url_for('main.transaction_status',
-                                transaction_id=transaction.identifiant_transaction, numero=numero))
+                                transaction_id=transaction.identifiant_transaction, numero=numero, adresse=adresse))
 
     return render_template('buy.html', form=form, taux_vente=taux_vente)
 
@@ -187,6 +188,7 @@ def sell():
         # ✅ CORRECTION : récupération correcte
         portefeuille = PortefeuilleAdmin.get_adresse_crypto(form.reseau.data)
         adresse=portefeuille.adresse
+        numero=None
 
         if not portefeuille:
             flash("Aucun numéro marchand disponible.", "error")
@@ -218,7 +220,7 @@ def sell():
         db.session.commit()
 
         return redirect(url_for('main.transaction_status',
-                                transaction_id=transaction.identifiant_transaction, adresse=adresse))
+                                transaction_id=transaction.identifiant_transaction,numero=numero, adresse=adresse))
 
     return render_template('sell.html', form=form, taux_achat=taux_achat)
 
@@ -747,6 +749,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
