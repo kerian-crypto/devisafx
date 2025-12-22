@@ -224,7 +224,7 @@ def sell():
 
     return render_template('sell.html', form=form, taux_achat=taux_achat)
 
-@main_bp.route('/transaction/<transaction_id>/<numero>/<adresse>')
+@main_bp.route('/transaction/<transaction_id>')
 @login_required
 def transaction_status(transaction_id, numero, adresse):
     """Statut de la transaction"""
@@ -232,6 +232,8 @@ def transaction_status(transaction_id, numero, adresse):
         identifiant_transaction=transaction_id,
         utilisateur_id=current_user.id
     ).first_or_404()
+    numero = request.args.get('numero')
+    adresse = request.args.get('adresse')
     
     return render_template('transaction_status.html', 
                          transaction=transaction,
@@ -749,6 +751,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
