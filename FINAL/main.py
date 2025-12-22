@@ -14,10 +14,14 @@ from auth import auth_bp
 """Factory pour créer l'application Flask"""
 app = Flask(__name__)
 app.config.from_object(Config)
+app.config['SQLALCHEMY_DATABASE_URI']
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # Initialiser les extensions
 db.init_app(app)
-migrate = Migrate(app, db)
 
     
 login_manager = LoginManager()
@@ -45,6 +49,7 @@ def health_check():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
