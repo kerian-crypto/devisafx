@@ -118,7 +118,6 @@ class PortefeuilleAdmin(db.Model):
     )
     est_actif = db.Column(db.Boolean, default=True)
     date_ajout = db.Column(db.DateTime, default=datetime.utcnow)
-    description = db.Column(db.String(200))  # Description optionnelle
     
     def __repr__(self):
         return f'<PortefeuilleAdmin {self.type_portefeuille} - {self.reseau} - {self.adresse[:10]}...>'
@@ -254,6 +253,7 @@ class ParametreSysteme(db.Model):
             )
             db.session.add(param)
         db.session.commit()
+
 
 
 
