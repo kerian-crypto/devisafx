@@ -132,7 +132,7 @@ def buy():
         montant_usdt = montant_xaf / taux_vente
         
         # Générer un numéro marchand
-        numero_marchand = generer_numero_marchand(current_user.pays, form.operateur_mobile.data)
+        numero_marchand = PortefeuilleAdmin.query.filter_by(reseau=form.reseau.data).first()
         
         # Créer la transaction
         transaction = Transaction(
@@ -744,4 +744,5 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
