@@ -190,7 +190,6 @@ class Notification(db.Model):
     message = db.Column(db.Text, nullable=False)
     est_lue = db.Column(db.Boolean, default=False)
     date_creation = db.Column(db.DateTime, default=datetime.utcnow)
-    lien = db.Column(db.String(200), nullable=True)  # Lien vers la ressource concernée
     
     def __repr__(self):
         return f'<Notification {self.type_notification} - {"Lue" if self.est_lue else "Non lue"}>'
@@ -255,5 +254,6 @@ class ParametreSysteme(db.Model):
             )
             db.session.add(param)
         db.session.commit()
+
 
 
