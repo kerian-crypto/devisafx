@@ -28,7 +28,7 @@
     <div class="d-flex justify-content-between align-items-center">
         <div>
             <h1 class="user-welcome">Gestion des transactions</h1>
-            <p class="text-muted">Visualisez et gÃ©rez toutes les transactions de la plateforme</p>
+            <p class="text-muted">Visualisez et gérez toutes les transactions de la plateforme</p>
         </div>
         <div>
             <button class="btn btn-primary" onclick="exportTransactions()">
@@ -53,19 +53,19 @@
             </a>
             <a href="{{ url_for('admin.admin_transactions', statut='valide') }}" 
                class="filter-badge badge {% if request.args.get('statut') == 'valide' %}active{% endif %} bg-info">
-                ValidÃ©es
+                Validées
             </a>
             <a href="{{ url_for('admin.admin_transactions', statut='complete') }}" 
                class="filter-badge badge {% if request.args.get('statut') == 'complete' %}active{% endif %} bg-success">
-                ComplÃ©tÃ©es
+                Complétées
             </a>
             <a href="{{ url_for('admin.admin_transactions', statut='rejete') }}" 
                class="filter-badge badge {% if request.args.get('statut') == 'rejete' %}active{% endif %} bg-danger">
-                RejetÃ©es
+                Rejetées
             </a>
         </div>
         
-        <!-- Filtres avancÃ©s -->
+        <!-- Filtres avancés -->
         <div class="row mt-3">
             <div class="col-md-3">
                 <input type="date" class="form-control form-control-sm" id="filter-date" placeholder="Date">
@@ -79,7 +79,7 @@
             </div>
             <div class="col-md-3">
                 <select class="form-select form-select-sm" id="filter-reseau">
-                    <option value="">Tous rÃ©seaux</option>
+                    <option value="">Tous réseaux</option>
                     <option value="TRC20">TRC20</option>
                     <option value="ETHEREUM">Ethereum</option>
                     <option value="SOL">Solana</option>
@@ -107,7 +107,7 @@
                         <th>Utilisateur</th>
                         <th>Type</th>
                         <th>Montant</th>
-                        <th>RÃ©seau</th>
+                        <th>Réseau</th>
                         <th>Date</th>
                         <th>Statut</th>
                         <th>Actions</th>
@@ -133,16 +133,14 @@
                         </td>
                         <td>
                             {% if transaction.type_transaction == 'achat' %}
-                                <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong><br>
-                                <small>{{ transaction.montant_usdt }} USDT</small><br>
-                                <small><strong>Utilisateur:</strong> {{ transaction.adresse_wallet_utilisateur|truncate(20) }}</small><br>
-                                <small><strong>Admin:</strong> {{ transaction.portefeuille_admin_mobile.adresse|truncate(20) }}</small>
+                            <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong><br>
+                            <small>{{ transaction.montant_usdt }} USDT</small><br>
+                            <small>{{ transaction.adresse_wallet }}</small>
                             {% else %}
-                                <strong>{{ transaction.montant_usdt }} USDT</strong><br>
-                                <small>{{ formater_montant(transaction.montant_xaf) }} XAF</small><br>
-                                <small><strong>Utilisateur:</strong> {{ transaction.numero_mobile_utilisateur }}</small><br>
-                                <small><strong>Admin:</strong> {{ transaction.portefeuille_admin_crypto.adresse|truncate(20) }}</small>
-                            {% endif %}</td>
+                            <strong>{{ transaction.montant_usdt }} USDT</strong><br>
+                            <small>{{ formater_montant(transaction.montant_xaf) }} XAF</small>
+                            {% endif %}
+                        </td>
                         <td>{{ transaction.reseau }}</td>
                         <td>{{ transaction.date_creation.strftime('%d/%m %H:%M') }}</td>
                         <td>
@@ -154,7 +152,7 @@
                             <div class="action-buttons">
                                 <button class="btn btn-sm btn-outline-primary" 
                                         onclick="showTransactionDetails('{{ transaction.identifiant_transaction }}')"
-                                        title="DÃ©tails">
+                                        title="Détails">
                                     <i class="fas fa-eye"></i>
                                 </button>
                                 {% if transaction.statut == 'en_attente' %}
@@ -176,7 +174,7 @@
                     <tr>
                         <td colspan="8" class="text-center py-5">
                             <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">Aucune transaction trouvÃ©e</p>
+                            <p class="text-muted">Aucune transaction trouvée</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -186,16 +184,16 @@
     </div>
 </div>
 
-<!-- Modal des dÃ©tails -->
+<!-- Modal des détails -->
 <div class="modal fade" id="detailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">DÃ©tails de la transaction</h5>
+                <h5 class="modal-title">Détails de la transaction</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="transaction-details-content">
-                <!-- Contenu chargÃ© dynamiquement -->
+                <!-- Contenu chargé dynamiquement -->
             </div>
         </div>
     </div>
@@ -229,7 +227,7 @@
 
 {% block scripts %}
 <script>
-// Afficher les dÃ©tails d'une transaction
+// Afficher les détails d'une transaction
 function showTransactionDetails(transactionId) {
     fetch(`/admin/transaction/${transactionId}/details`)
         .then(response => response.json())
@@ -250,7 +248,7 @@ function validateTransaction(transactionId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                alert('Transaction validÃ©e avec succÃ¨s !');
+                alert('Transaction validée avec succès !');
                 location.reload();
             } else {
                 alert('Erreur: ' + data.message);
@@ -279,7 +277,7 @@ document.getElementById('rejectForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert('Transaction rejetÃ©e !');
+            alert('Transaction rejetée !');
             location.reload();
         } else {
             alert('Erreur: ' + data.message);
@@ -339,7 +337,7 @@ function exportTransactions() {
         }
     });
     
-    // TÃ©lÃ©charger
+    // Télécharger
     const csvContent = csv.join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -359,4 +357,3 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
-
