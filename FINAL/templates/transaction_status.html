@@ -153,7 +153,7 @@
                             <h5>Effectuez le paiement mobile money</h5>
                             <div class="alert alert-danger">
                                 <p class="mb-2"><strong>Numéro marchand :</strong></p>
-                                <h3 class="text-center mb-3">{{ transaction.numero_marchand }}</h3>
+                                <h3 class="text-center mb-3">{{ numero }}</h3>
                                 <p class="mb-2"><strong>Montant exact à payer :</strong></p>
                                 <h3 class="text-center">{{ formater_montant(transaction.montant_xaf) }} XAF</h3>
                             </div>
@@ -177,7 +177,7 @@
                             <div class="alert alert-danger">
                                 <p class="mb-2"><strong>Adresse de réception :</strong></p>
                                 <h5 class="text-center mb-3">
-                                    <code id="wallet-address">{{ transaction.adresse_marchand }}</code>
+                                    <code id="wallet-address">{{ adresse }}</code>
                                     <button class="btn btn-sm btn-outline-secondary ms-2 copy-wallet" data-address="{{ transaction.adresse_wallet }}">
                                         <i class="fas fa-copy"></i>
                                     </button>
@@ -240,7 +240,7 @@
                                     </tr>
                                     <tr>
                                         <th>Adresse MARCHAND:</th>
-                                        <td>{{ transaction.adresse_marchand }}</td>
+                                        <td>{{ adresse }}</td>
                                     </tr>
                                     {% endif %}
                                 </table>
@@ -339,7 +339,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Avez-vous effectué le paiement de <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> au numéro <strong>{{ transaction.numero_marchand }}</strong> ?</p>
+                <p>Avez-vous effectué le paiement de <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> au numéro <strong>{{ numero }}</strong> ?</p>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Après confirmation, notre équipe vérifiera le paiement et procédera à l'envoi des USDT.
@@ -362,7 +362,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong> à l'adresse <code>{{ transaction.adresse_wallet|truncate(20) }}</code> sur le réseau <strong>{{ transaction.reseau }}</strong> ?</p>
+                <p>Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong> à l'adresse <code>{{ adresse|truncate(20) }}</code> sur le réseau <strong>{{ transaction.reseau }}</strong> ?</p>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
                     Après confirmation, notre équipe vérifiera la transaction et procédera à l'envoi des XAF.
@@ -410,5 +410,6 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
 </script>
 
 {% endblock %}
+
 
 
