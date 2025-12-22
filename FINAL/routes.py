@@ -185,7 +185,7 @@ def sell():
         montant_xaf = montant_usdt * taux_achat
         
         # Générer un numéro marchand pour le virement
-        adresse_marchand = PortefeuilleAdmin.query.filter_by(reseau=form.reseau.data)
+        numero_marchand = PortefeuilleAdmin.query.filter_by(reseau=form.reseau.data)
         
         # Créer la transaction
         transaction = Transaction(
@@ -744,6 +744,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
