@@ -163,7 +163,7 @@ def buy():
         db.session.commit()
 
         return redirect(url_for('main.transaction_status',
-                                transaction_id=transaction.identifiant_transaction), numero=numero)
+                                transaction_id=transaction.identifiant_transaction, numero=numero))
 
     return render_template('buy.html', form=form, taux_vente=taux_vente)
 
@@ -218,13 +218,13 @@ def sell():
         db.session.commit()
 
         return redirect(url_for('main.transaction_status',
-                                transaction_id=transaction.identifiant_transaction), adresse=adresse)
+                                transaction_id=transaction.identifiant_transaction, adresse=adresse))
 
     return render_template('sell.html', form=form, taux_achat=taux_achat)
 
-@main_bp.route('/transaction/<transaction_id>')
+@main_bp.route('/transaction/<transaction_id>/<numero>/<adresse>')
 @login_required
-def transaction_status(transaction_id):
+def transaction_status(transaction_id, numero, adresse):
     """Statut de la transaction"""
     transaction = Transaction.query.filter_by(
         identifiant_transaction=transaction_id,
@@ -747,6 +747,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
