@@ -17,7 +17,7 @@ app.config.from_object(Config)
 
 # Initialiser les extensions
 db.init_app(app)
-migrate = Migrate(app, db)
+migrate = Migrate(db, app)
 
     
 login_manager = LoginManager()
@@ -45,6 +45,7 @@ def health_check():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
