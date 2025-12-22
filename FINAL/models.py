@@ -57,11 +57,11 @@ class Transaction(db.Model):
     
     # Informations réseau et wallet
     reseau = db.Column(db.String(50), nullable=False)  # TRC20, ETHEREUM, SOL, USDT_TON, USDT_APTOS
-    adresse_wallet = db.Column(db.String(200))  # Adresse wallet du client
+    adresse_wallet = db.Column(db.String(100))  # Adresse wallet du client
     
     # Informations mobile money
     operateur_mobile = db.Column(db.String(50))  # MTN, ORANGE, etc.
-    numero_marchand = db.Column(db.String(20))  # Numéro marchand pour le paiement
+    numero_marchand = db.Column(db.String(100))  # Numéro marchand pour le paiement
     
     # Statut et validation
     statut = db.Column(
@@ -253,6 +253,7 @@ class ParametreSysteme(db.Model):
             )
             db.session.add(param)
         db.session.commit()
+
 
 
 
