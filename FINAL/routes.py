@@ -116,108 +116,109 @@ def dashboard():
 @login_required
 def buy():
     """Achat de USDT"""
-    
-    # Vérifier si les taux sont définis pour aujourd'hui
+
     taux_du_jour = TauxJournalier.query.filter_by(date=date.today()).first()
     if not taux_du_jour:
-        flash('Les taux du jour ne sont pas encore définis. Veuillez réessayer plus tard.', 'error')
+        flash("Les taux du jour ne sont pas définis.", "error")
         return redirect(url_for('main.dashboard'))
-    
+
     form = FormulaireAchat()
     taux_vente = taux_du_jour.taux_vente
-    
+
     if form.validate_on_submit():
-        # Calculer le montant en USDT
         montant_xaf = form.montant_xaf.data
         montant_usdt = montant_xaf / taux_vente
-        
-        # Générer un numéro marchand
-        numero_marchand = PortefeuilleAdmin.query.filter_by(reseau=form.operateur_mobile.data, type_portefeuille="mobile_money").first()
-        
-        # Créer la transaction
+
+        # ✅ CORRECTION : récupérer UN portefeuille actif
+        portefeuille = PortefeuilleAdmin.get_numero_marchand(form.operateur_mobile.data)
+
+        if not portefeuille:
+            flash("Aucun numéro marchand disponible.", "error")
+            return redirect(url_for('main.dashboard'))
+
         transaction = Transaction(
             utilisateur_id=current_user.id,
             type_transaction='achat',
             montant_xaf=montant_xaf,
             montant_usdt=round(montant_usdt, 2),
+            taux_applique=taux_vente,
             reseau=form.reseau.data,
             adresse_wallet=form.adresse_wallet.data,
             operateur_mobile=form.operateur_mobile.data,
-            numero_marchand=numero_marchand,
-            taux_applique=taux_vente,
+            # ✅ CORRECTION MAJEURE
+            numero_marchand=portefeuille.adresse,
             statut='en_attente'
         )
-        
+
         db.session.add(transaction)
         db.session.commit()
-        
-        # Créer une notification pour l'admin
+
         notification = Notification(
-            admin_id=1,  # ID de l'admin principal
+            admin_id=1,
             type_notification='nouvelle_transaction',
-            message=f"Nouvelle transaction d'achat: {montant_xaf} XAF par {current_user.nom}"
+            message=f"Nouvel achat : {montant_xaf} XAF par {current_user.nom}"
         )
         db.session.add(notification)
         db.session.commit()
-        
-        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
-    
-    return render_template('buy.html', 
-                         form=form,
-                         taux_vente=taux_vente)
+
+        return redirect(url_for('main.transaction_status',
+                                transaction_id=transaction.identifiant_transaction))
+
+    return render_template('buy.html', form=form, taux_vente=taux_vente)
 
 @main_bp.route('/sell', methods=['GET', 'POST'])
 @login_required
 def sell():
     """Vente de USDT"""
-    # Vérifier si les taux sont définis pour aujourd'hui
+
     taux_du_jour = TauxJournalier.query.filter_by(date=date.today()).first()
     if not taux_du_jour:
-        flash('Les taux du jour ne sont pas encore définis. Veuillez réessayer plus tard.', 'error')
+        flash("Les taux du jour ne sont pas définis.", "error")
         return redirect(url_for('main.dashboard'))
-    
+
     form = FormulaireVente()
     taux_achat = taux_du_jour.taux_achat
-    
+
     if form.validate_on_submit():
-        # Calculer le montant en XAF
         montant_usdt = form.montant_usdt.data
         montant_xaf = montant_usdt * taux_achat
-        
-        # Générer un numéro marchand pour le virement
-        numero_marchand = PortefeuilleAdmin.query.filter_by(reseau=form.reseau.data)
-        
-        # Créer la transaction
+
+        # ✅ CORRECTION : récupération correcte
+        portefeuille = PortefeuilleAdmin.get_numero_marchand(form.operateur_mobile.data)
+
+        if not portefeuille:
+            flash("Aucun numéro marchand disponible.", "error")
+            return redirect(url_for('main.dashboard'))
+
         transaction = Transaction(
             utilisateur_id=current_user.id,
             type_transaction='vente',
             montant_xaf=round(montant_xaf, 2),
             montant_usdt=montant_usdt,
+            taux_applique=taux_achat,
             reseau=form.reseau.data,
             adresse_wallet=form.adresse_wallet.data,
             operateur_mobile=form.operateur_mobile.data,
-            numero_marchand=numero_marchand,
-            taux_applique=taux_achat,
+            # ✅ CORRECTION MAJEURE
+            numero_marchand=portefeuille.adresse,
             statut='en_attente'
         )
-        
+
         db.session.add(transaction)
         db.session.commit()
-        
-        # Créer une notification pour l'admin
+
         notification = Notification(
-            admin_id=1,  # ID de l'admin principal
+            admin_id=1,
             type_notification='nouvelle_transaction',
-            message=f"Nouvelle transaction de vente: {montant_usdt} USDT par {current_user.nom}"
+            message=f"Nouvelle vente : {montant_usdt} USDT par {current_user.nom}"
         )
         db.session.add(notification)
         db.session.commit()
-        
-        return redirect(url_for('main.transaction_status', transaction_id=transaction.identifiant_transaction))
-    
-    return render_template('sell.html', 
-                         form=form,
-                         taux_achat=taux_achat)
+
+        return redirect(url_for('main.transaction_status',
+                                transaction_id=transaction.identifiant_transaction))
+
+    return render_template('sell.html', form=form, taux_achat=taux_achat)
 
 @main_bp.route('/transaction/<transaction_id>')
 @login_required
@@ -744,6 +745,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
