@@ -179,7 +179,7 @@ def sell():
 
     form = FormulaireVente()
     taux_achat = taux_du_jour.taux_achat
-
+    
     if form.validate_on_submit():
         montant_usdt = form.montant_usdt.data
         montant_xaf = montant_usdt * taux_achat
@@ -219,8 +219,8 @@ def sell():
                                 transaction_id=transaction.identifiant_transaction,
                                 numero=numero,
                                 adresse=adresse))
-
-
+    return render_template('sell.html', form=form, taux_achat=taux_achat)
+        
 # Statut de la transaction
 @main_bp.route('/transaction/<transaction_id>')
 @login_required
@@ -753,6 +753,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
