@@ -132,7 +132,7 @@ def buy():
         montant_usdt = montant_xaf / taux_vente
         
         # Générer un numéro marchand
-        numero_marchand = PortefeuilleAdmin.query.filter_by(reseau=form.reseau.data).first()
+        numero_marchand = PortefeuilleAdmin.query.filter_by(reseau=form.operateur_mobile.data, type_portefeuille="mobile_money").first()
         
         # Créer la transaction
         transaction = Transaction(
@@ -185,7 +185,7 @@ def sell():
         montant_xaf = montant_usdt * taux_achat
         
         # Générer un numéro marchand pour le virement
-        numero_marchand = generer_numero_marchand(current_user.pays, form.operateur_mobile.data)
+        adresse_marchand = PortefeuilleAdmin.query.filter_by(reseau=form.reseau.data)
         
         # Créer la transaction
         transaction = Transaction(
@@ -744,5 +744,6 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
