@@ -147,8 +147,7 @@ def buy():
             adresse_wallet=form.adresse_wallet.data,
             operateur_mobile=form.operateur_mobile.data,
             # ✅ CORRECTION MAJEURE
-            numero_marchand=portefeuille.adresse,
-            adresse_marchand=None,
+            numero_marchand=None,
             statut='en_attente'
         )
 
@@ -204,7 +203,6 @@ def sell():
             operateur_mobile=form.operateur_mobile.data,
             # ✅ CORRECTION MAJEURE
             numero_marchand=None,
-            adresse_marchand=portefeuille.adresse,
             statut='en_attente'
         )
 
@@ -749,6 +747,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
