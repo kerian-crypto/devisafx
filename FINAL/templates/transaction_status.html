@@ -366,13 +366,14 @@
                 <p>Avez-vous effectué le paiement de <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> au numéro <strong>{{ numero }}</strong> ?</p>
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    Après confirmation, notre équipe vérifiera le paiement et procédera à l'envoi des USDT.
+                    Après confirmation, notre équipe vérifiera le paiement et procédera à l'envoi des 
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non, pas encore</button>
+                        <button type="button" class="btn btn-primary" onclick="confirmPayment()">Oui, j'ai payé</button>
+                    </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non, pas encore</button>
-                <button type="button" class="btn btn-primary" onclick="confirmPayment()">Oui, j'ai payé</button>
-            </div>
+            
         </div>
     </div>
 </div>
@@ -444,6 +445,7 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
 </script>
 
 {% endblock %}
+
 
 
 
