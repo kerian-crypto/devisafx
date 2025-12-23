@@ -168,6 +168,30 @@
                                     <li>Conservez le reçu de paiement</li>
                                 </ul>
                             </div>
+                            <!-- Actions -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord
+                                </a>
+                    
+                                {% if transaction.statut == 'en_attente' %}
+                                    <div>
+                                        <button class="btn btn-outline-danger me-2">
+                                            <i class="fas fa-times me-2"></i>Annuler
+                                        </button>
+                                    {% if transaction.type_transaction == 'achat' %}
+                                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
+                                            <i class="fas fa-check me-2"></i>voulez vous continuer le paiement
+                                        </button>
+                                    {% else %}
+                                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sentModal">
+                                            <i class="fas fa-check me-2"></i>voulez vous continuer l'envoi
+                                        </button>
+                                    {% endif %}
+                                    </div>
+                                {% endif %}
+                                </div>
+                            
                             
                             <p>Après avoir effectué le paiement, notre équipe vérifiera la transaction et vous enverra les USDT sur l'adresse indiquée.</p>
                         </div>
@@ -302,29 +326,6 @@
                 </div>
                 {% endif %}
                 
-                <!-- Actions -->
-                <div class="d-flex justify-content-between mt-4">
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord
-                    </a>
-                    
-                    {% if transaction.statut == 'en_attente' %}
-                    <div>
-                        <button class="btn btn-outline-danger me-2">
-                            <i class="fas fa-times me-2"></i>Annuler
-                        </button>
-                        {% if transaction.type_transaction == 'achat' %}
-                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
-                            <i class="fas fa-check me-2"></i>voulez vous continuer le paiement
-                        </button>
-                        {% else %}
-                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sentModal">
-                            <i class="fas fa-check me-2"></i>voulez vous continuer l'envoi
-                        </button>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
             </div>
         </div>
     </div>
@@ -420,6 +421,7 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
 </script>
 
 {% endblock %}
+
 
 
 
