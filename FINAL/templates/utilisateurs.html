@@ -369,10 +369,10 @@
             <div class="modal-body">
                 <p>Sélectionnez le format d'exportation :</p>
                 <div class="d-grid gap-2">
-                    <a href="{{ url_for('admin.export_utilisateurs', format='csv') }}" class="btn btn-outline-primary">
+                    <a href="{{ url_for('admin.liste_utilisateurs', format='csv') }}" class="btn btn-outline-primary">
                         <i class="fas fa-file-csv me-2"></i> CSV
                     </a>
-                    <a href="{{ url_for('admin.export_utilisateurs', format='excel') }}" class="btn btn-outline-success">
+                    <a href="{{ url_for('admin.liste_utilisateurs', format='excel') }}" class="btn btn-outline-success">
                         <i class="fas fa-file-excel me-2"></i> Excel
                     </a>
                     <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
