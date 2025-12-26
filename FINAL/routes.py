@@ -61,7 +61,7 @@ def register():
         
         db.session.add(utilisateur)
         db.session.commit()
-        redirect(url_for('login'))
+        redirect(url_for('main.login'))
     
     return render_template('register.html', form=form)
     
@@ -828,6 +828,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
