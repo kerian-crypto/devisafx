@@ -18,7 +18,7 @@ class FormulaireInscription(FlaskForm):
     ])
     pays = SelectField('Pays', choices=[
         ('CM', 'Cameroun'),
-        ('TG', 'Togo'),
+        ('TH', 'Tchad'),
         ('GA', 'Gabon'),
         ('CF', 'République Centrafricaine'),
         ('CD', 'RD Congo')
@@ -234,3 +234,4 @@ class FormulaireAjoutWallet(FlaskForm):
             if reseau == 'TRC20' and len(adresse) != 34:
                 raise ValidationError('Les adresses TRC20 doivent contenir 34 caractères')
     
+
