@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+
+{% block title %}Devisa-FX - Détail Utilisateur{% endblock %}
+
+{% block content %}
+<div class="container">
+    <a href="{{ url_for('admin.liste_utilisateurs') }}" class="btn btn-outline-secondary mb-4">
+        <i class="fas fa-arrow-left me-2"></i> Retour à la liste
+    </a>
+    
+    <div class="card shadow-sm border-0">
+        <div class="profile-header text-white p-4 rounded-top" style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%);">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center">
+                    <div class="avatar-lg bg-white text-dark rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 100px; height: 100px; font-size: 2.5rem;">
+                        {{ utilisateur.nom[0].upper() if utilisateur.nom else 'U' }}
+                    </div>
+                </div>
+                <div class="col-md-10">
+                    <h1 class="h2 mb-1">{{ utilisateur.nom }}</h1>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        {% if utilisateur.est_admin %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="fas fa-shield-alt"></i> Administrateur
+                        </span>
+                        {% endif %}
+                        {% if utilisateur.est_actif %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle"></i> Compte actif
+                        </span>
+                        {% else %}
+                        <span class="badge bg-danger">
+                            <i class="fas fa-times-circle"></i> Compte inactif
+                        </span>
+                        {% endif %}
+                        {% if utilisateur.email_verifie %}
+                        <span class="badge bg-info">
+                            <i class="fas fa-envelope-check"></i> Email vérifié
+                        </span>
+                        {% endif %}
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-calendar"></i> Inscrit le {{ utilisateur.date_inscription.strftime('%d/%m/%Y') }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div class="row">
+                <!-- Informations principales -->
+                <div class="col-md-6">
+                    <h5 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-info-circle me-2"></i>Informations personnelles
+                    </h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">ID Unique</dt>
+                        <dd class="col-sm-8">
+                            <code>{{ utilisateur.identifiant_unique }}</code>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Téléphone</dt>
+                        <dd class="col-sm-8">
+                            <i class="fas fa-phone me-2 text-primary"></i>
+                            <a href="tel:{{ utilisateur.telephone }}" class="text-decoration-none">
+                                {{ utilisateur.telephone }}
+                            </a>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Email</dt>
+                        <dd class="col-sm-8">
+                            <i class="fas fa-envelope me-2 text-primary"></i>
+                            <a href="mailto:{{ utilisateur.email }}" class="text-decoration-none">
+                                {{ utilisateur.email }}
+                            </a>
+                            {% if utilisateur.email_verifie %}
+                            <span class="badge bg-success ms-2">Vérifié</span>
+                            {% else %}
+                            <span class="badge bg-warning ms-2">Non vérifié</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">Pays</dt>
+                        <dd class="col-sm-8">
+                            <i class="fas fa-globe me-2 text-primary"></i>
+                            {{ utilisateur.pays }}
+                        </dd>
+                    </dl>
+                </div>
+                
+                <!-- Informations du compte -->
+                <div class="col-md-6">
+                    <h5 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-user-circle me-2"></i>Informations du compte
+                    </h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">Date d'inscription</dt>
+                        <dd class="col-sm-8">
+                            <i class="fas fa-calendar-alt me-2 text-primary"></i>
+                            {{ utilisateur.date_inscription.strftime('%d/%m/%Y à %H:%M') }}
+                            <small class="text-muted d-block">
+                                (Il y a {{ anciennete }} jours)
+                            </small>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Méthode d'inscription</dt>
+                        <dd class="col-sm-8">
+                            {% if utilisateur.google_id %}
+                            <span class="badge bg-danger">
+                                <i class="fab fa-google"></i> Google
+                            </span>
+                            <small class="text-muted ms-2">ID: {{ utilisateur.google_id[:20] }}...</small>
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-envelope"></i> Email/Mot de passe
+                            </span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">Token vérification</dt>
+                        <dd class="col-sm-8">
+                            {% if utilisateur.token_verification %}
+                            <code class="small bg-light p-1 rounded">{{ utilisateur.token_verification[:30] }}...</code>
+                            {% else %}
+                            <span class="text-muted">Aucun</span>
+                            {% endif %}
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Statistiques -->
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <h5 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-chart-bar me-2"></i>Statistiques
+                    </h5>
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Transactions</h6>
+                                    <h3 class="display-6">{{ utilisateur.transactions|length }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Notifications</h6>
+                                    <h3 class="display-6">{{ utilisateur.notifications|length }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Ancienneté</h6>
+                                    <h3 class="display-6">{{ anciennete }} jours</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="col-md-4">
+                    <h5 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-cogs me-2"></i>Actions
+                    </h5>
+                    <div class="d-grid gap-2">
+                        {% if not utilisateur.est_actif %}
+                        <button class="btn btn-success" onclick="toggleUserStatus('{{ utilisateur.identifiant_unique }}', 'activate')">
+                            <i class="fas fa-power-off me-2"></i> Réactiver le compte
+                        </button>
+                        {% else %}
+                        <button class="btn btn-warning" onclick="sendVerification('{{ utilisateur.identifiant_unique }}')">
+                            <i class="fas fa-envelope me-2"></i> Renvoyer vérification
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="toggleUserStatus('{{ utilisateur.identifiant_unique }}', 'deactivate')">
+                            <i class="fas fa-user-times me-2"></i> Désactiver le compte
+                        </button>
+                        {% endif %}
+                        
+                        {% if not utilisateur.est_admin %}
+                        <button class="btn btn-outline-primary" onclick="toggleAdminStatus('{{ utilisateur.identifiant_unique }}', 'grant')">
+                            <i class="fas fa-shield-plus me-2"></i> Donner droits admin
+                        </button>
+                        {% else %}
+                        <button class="btn btn-outline-warning" onclick="toggleAdminStatus('{{ utilisateur.identifiant_unique }}', 'revoke')">
+                            <i class="fas fa-shield-minus me-2"></i> Retirer droits admin
+                        </button>
+                        {% endif %}
+                        
+                        <button class="btn btn-outline-info" onclick="resetPassword('{{ utilisateur.identifiant_unique }}')">
+                            <i class="fas fa-key me-2"></i> Réinitialiser mot de passe
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Transactions récentes -->
+            {% if utilisateur.transactions %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <h5 class="border-bottom pb-2 mb-3">
+                        <i class="fas fa-exchange-alt me-2"></i>Transactions récentes
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Montant</th>
+                                    <th>Date</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in utilisateur.transactions[:5] %}
+                                <tr>
+                                    <td>{{ transaction.id }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if transaction.type == 'achat' else 'warning' }}">
+                                            {{ transaction.type|capitalize }}
+                                        </span>
+                                    </td>
+                                    <td>{{ transaction.montant }} USDT</td>
+                                    <td>{{ transaction.date_creation.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if transaction.statut == 'completé' else 'warning' }}">
+                                            {{ transaction.statut }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function toggleUserStatus(userId, action) {
+        if (!confirm(`Êtes-vous sûr de vouloir ${action === 'activate' ? 'réactiver' : 'désactiver'} cet utilisateur ?`)) {
+            return;
+        }
+        
+        fetch(`/admin/utilisateur/${userId}/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Une erreur est survenue');
+            }
+        });
+    }
+    
+    function toggleAdminStatus(userId, action) {
+        if (!confirm(`Êtes-vous sûr de vouloir ${action === 'grant' ? 'donner' : 'retirer'} les droits administrateur ?`)) {
+            return;
+        }
+        
+        fetch(`/admin/utilisateur/${userId}/admin/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Une erreur est survenue');
+            }
+        });
+    }
+    
+    function sendVerification(userId) {
+        fetch(`/admin/utilisateur/${userId}/send-verification`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Email de vérification envoyé avec succès');
+            } else {
+                alert(data.message || 'Une erreur est survenue');
+            }
+        });
+    }
+    
+    function resetPassword(userId) {
+        if (!confirm('Réinitialiser le mot de passe de cet utilisateur ? Un email lui sera envoyé.')) {
+            return;
+        }
+        
+        fetch(`/admin/utilisateur/${userId}/reset-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Mot de passe réinitialisé avec succès');
+            } else {
+                alert(data.message || 'Une erreur est survenue');
+            }
+        });
+    }
+</script>
+{% endblock %}
