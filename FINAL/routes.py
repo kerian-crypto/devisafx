@@ -481,7 +481,7 @@ def detail_utilisateur(identifiant_unique):
     # Calcul de l'ancienneté
     anciennete = (datetime.utcnow() - utilisateur.date_inscription).days
     
-    return render_template('detail_utilisateur.html',
+    return render_template('detail_utilisateurs.html',
                          utilisateur=utilisateur,
                          anciennete=anciennete)
 
@@ -828,6 +828,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
