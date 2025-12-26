@@ -410,6 +410,81 @@ def admin_wallets():
     
     return render_template('admin_wallets.html', portefeuilles=portefeuilles)
 
+@admin_bp.route('/utilisateurs')
+@login_required
+def liste_utilisateurs():
+    """Affiche tous les utilisateurs avec filtres"""
+    
+    # Récupération des paramètres de filtrage
+    page = request.args.get('page', 1, type=int)
+    statut = request.args.get('statut', 'tous')
+    admin = request.args.get('admin', 'tous')
+    pays = request.args.get('pays', '')
+    email_verifie = request.args.get('email_verifie', '')
+    
+    # Construction de la requête de base
+    query = Utilisateur.query
+    
+    # Application des filtres
+    if statut == 'actifs':
+        query = query.filter_by(est_actif=True)
+    elif statut == 'inactifs':
+        query = query.filter_by(est_actif=False)
+    
+    if admin == 'admins':
+        query = query.filter_by(est_admin=True)
+    elif admin == 'non-admins':
+        query = query.filter_by(est_admin=False)
+    
+    if pays:
+        query = query.filter(Utilisateur.pays.ilike(f'%{pays}%'))
+    
+    if email_verifie == 'verifies':
+        query = query.filter_by(email_verifie=True)
+    elif email_verifie == 'non-verifies':
+        query = query.filter_by(email_verifie=False)
+    
+    # Pagination (20 utilisateurs par page)
+    utilisateurs = query.order_by(Utilisateur.date_inscription.desc())\
+                       .paginate(page=page, per_page=20, error_out=False)
+    
+    # Statistiques pour les filtres
+    total_utilisateurs = Utilisateur.query.count()
+    admins = Utilisateur.query.filter_by(est_admin=True).count()
+    actifs = Utilisateur.query.filter_by(est_actif=True).count()
+    verifies = Utilisateur.query.filter_by(email_verifie=True).count()
+    
+    # Liste des pays uniques pour le filtre
+    pays_uniques = db.session.query(Utilisateur.pays)\
+                   .distinct()\
+                   .order_by(Utilisateur.pays)\
+                   .all()
+    pays_uniques = [p[0] for p in pays_uniques]
+    
+    return render_template('utilisateurs.html',
+                         utilisateurs=utilisateurs,
+                         total=total_utilisateurs,
+                         admins=admins,
+                         actifs=actifs,
+                         verifies=verifies,
+                         pays_uniques=pays_uniques,
+                         filtres=request.args)
+
+@admin_bp.route('/utilisateur/<string:identifiant_unique>')
+@login_required
+def detail_utilisateur(identifiant_unique):
+    """Page de détail d'un utilisateur"""
+    utilisateur = Utilisateur.query\
+        .filter_by(identifiant_unique=identifiant_unique)\
+        .first_or_404()
+    
+    # Calcul de l'ancienneté
+    anciennete = (datetime.utcnow() - utilisateur.date_inscription).days
+    
+    return render_template('detail_utilisateur.html',
+                         utilisateur=utilisateur,
+                         anciennete=anciennete)
+
 @admin_bp.route('/wallet/add', methods=['POST'])
 @login_required
 def add_wallet():
@@ -753,6 +828,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
