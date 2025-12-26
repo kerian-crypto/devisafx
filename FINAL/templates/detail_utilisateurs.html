@@ -258,7 +258,6 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
             }
         })
         .then(response => response.json())
@@ -280,7 +279,6 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
             }
         })
         .then(response => response.json())
