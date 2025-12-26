@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block title %}Devisa-FX - Gestion des Utilisateurs{% endblock %}
+
+{% block styles %}
+<style>
+    :root {
+        --bs-primary: #4361ee;
+        --bs-success: #4cc9f0;
+    }
+    .stat-card {
+        border-radius: 12px;
+        transition: transform 0.3s;
+        height: 100%;
+        border: none;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+    .badge-admin { background-color: #ff006e; }
+    .badge-verified { background-color: #4cc9f0; }
+    .badge-active { background-color: #38b000; }
+    .badge-inactive { background-color: #ff595e; }
+    .table-hover tbody tr:hover { 
+        background-color: rgba(67, 97, 238, 0.05); 
+        cursor: pointer;
+    }
+    .filters-panel {
+        background: linear-gradient(135deg, #1a237e 0%, #283593 100%);
+        border-radius: 12px;
+        color: white;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .pagination .page-item.active .page-link {
+        background-color: #1a237e;
+        border-color: #1a237e;
+    }
+    .avatar-sm {
+        width: 36px;
+        height: 36px;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    .btn-action {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    .search-box {
+        max-width: 300px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <!-- En-tête de page -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">
+            <i class="fas fa-users me-2"></i>Gestion des Utilisateurs
+        </h1>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i> Retour
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportModal">
+                <i class="fas fa-download me-1"></i> Exporter
+            </button>
+        </div>
+    </div>
+
+    <!-- Cartes de statistiques -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Total Utilisateurs</h6>
+                            <h2 class="card-title display-6">{{ total }}</h2>
+                        </div>
+                        <i class="fas fa-users display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Email Vérifiés</h6>
+                            <h2 class="card-title display-6">{{ verifies }}</h2>
+                        </div>
+                        <i class="fas fa-envelope-check display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Administrateurs</h6>
+                            <h2 class="card-title display-6">{{ admins }}</h2>
+                        </div>
+                        <i class="fas fa-shield-alt display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card stat-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-2">Actifs</h6>
+                            <h2 class="card-title display-6">{{ actifs }}</h2>
+                        </div>
+                        <i class="fas fa-check-circle display-6 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Panneau de filtres -->
+        <div class="col-lg-3 mb-4">
+            <div class="filters-panel p-4">
+                <h5 class="mb-4">
+                    <i class="fas fa-filter me-2"></i>Filtres
+                </h5>
+                <form method="get" action="{{ url_for('admin.liste_utilisateurs') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Statut</label>
+                        <select class="form-select form-select-sm" name="statut">
+                            <option value="tous" {{ 'selected' if filtres.get('statut') == 'tous' else '' }}>Tous les statuts</option>
+                            <option value="actifs" {{ 'selected' if filtres.get('statut') == 'actifs' else '' }}>Actifs seulement</option>
+                            <option value="inactifs" {{ 'selected' if filtres.get('statut') == 'inactifs' else '' }}>Inactifs seulement</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Rôle</label>
+                        <select class="form-select form-select-sm" name="admin">
+                            <option value="tous" {{ 'selected' if filtres.get('admin') == 'tous' else '' }}>Tous les rôles</option>
+                            <option value="admins" {{ 'selected' if filtres.get('admin') == 'admins' else '' }}>Administrateurs</option>
+                            <option value="non-admins" {{ 'selected' if filtres.get('admin') == 'non-admins' else '' }}>Utilisateurs standards</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Pays</label>
+                        <select class="form-select form-select-sm" name="pays">
+                            <option value="">Tous les pays</option>
+                            {% for pays in pays_uniques %}
+                            <option value="{{ pays }}" {{ 'selected' if filtres.get('pays') == pays else '' }}>
+                                {{ pays }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email vérifié</label>
+                        <select class="form-select form-select-sm" name="email_verifie">
+                            <option value="">Tous</option>
+                            <option value="verifies" {{ 'selected' if filtres.get('email_verifie') == 'verifies' else '' }}>Vérifiés</option>
+                            <option value="non-verifies" {{ 'selected' if filtres.get('email_verifie') == 'non-verifies' else '' }}>Non vérifiés</option>
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-light btn-sm">
+                            <i class="fas fa-filter me-1"></i> Appliquer
+                        </button>
+                        <a href="{{ url_for('admin.liste_utilisateurs') }}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-times-circle me-1"></i> Réinitialiser
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tableau des utilisateurs -->
+        <div class="col-lg-9">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 pt-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-table me-2"></i>Liste des Utilisateurs
+                        </h5>
+                        <div class="d-flex align-items-center">
+                            <div class="input-group input-group-sm search-box">
+                                <input type="text" class="form-control" placeholder="Rechercher..." id="searchInput">
+                                <button class="btn btn-outline-secondary" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <span class="badge bg-primary rounded-pill ms-3">
+                                {{ utilisateurs.total }} utilisateurs
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">ID</th>
+                                    <th>Utilisateur</th>
+                                    <th>Contact</th>
+                                    <th>Localisation</th>
+                                    <th>Statut</th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in utilisateurs.items %}
+                                <tr onclick="window.location='{{ url_for('admin.detail_utilisateur', identifiant_unique=user.identifiant_unique) }}'" style="cursor: pointer;">
+                                    <td class="ps-4">
+                                        <small class="text-muted">#{{ user.id }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm me-3 bg-primary rounded-circle d-flex align-items-center justify-content-center text-white">
+                                                {{ user.nom[0].upper() if user.nom else 'U' }}
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold">{{ user.nom }}</div>
+                                                <small class="text-muted">
+                                                    <i class="fas fa-calendar me-1"></i>
+                                                    {{ user.date_inscription.strftime('%d/%m/%Y') if user.date_inscription else 'N/A' }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="mb-1">
+                                            <i class="fas fa-envelope me-1 text-primary"></i>
+                                            <span class="text-truncate d-inline-block" style="max-width: 150px;" title="{{ user.email }}">
+                                                {{ user.email }}
+                                            </span>
+                                            {% if user.email_verifie %}
+                                            <span class="badge bg-success rounded-pill ms-1" title="Email vérifié">
+                                                <i class="fas fa-check"></i>
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-phone me-1 text-secondary"></i>
+                                            {{ user.telephone }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            <i class="fas fa-globe me-1"></i>{{ user.pays }}
+                                        </span>
+                                        <div class="small text-muted mt-1">
+                                            ID: {{ user.identifiant_unique[:8] }}...
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column gap-1">
+                                            {% if user.est_admin %}
+                                            <span class="badge badge-admin">
+                                                <i class="fas fa-shield-alt me-1"></i>Admin
+                                            </span>
+                                            {% endif %}
+                                            {% if user.est_actif %}
+                                            <span class="badge badge-active">
+                                                <i class="fas fa-check-circle me-1"></i>Actif
+                                            </span>
+                                            {% else %}
+                                            <span class="badge badge-inactive">
+                                                <i class="fas fa-times-circle me-1"></i>Inactif
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('admin.detail_utilisateur', identifiant_unique=user.identifiant_unique) }}" 
+                                               class="btn btn-outline-primary btn-action" title="Voir détails">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-success btn-action" title="Modifier" onclick="event.stopPropagation(); editUser('{{ user.identifiant_unique }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            {% if not user.est_actif %}
+                                            <button type="button" class="btn btn-outline-warning btn-action" title="Réactiver" onclick="event.stopPropagation(); toggleUserStatus('{{ user.identifiant_unique }}', 'activate')">
+                                                <i class="fas fa-power-off"></i>
+                                            </button>
+                                            {% else %}
+                                            <button type="button" class="btn btn-outline-danger btn-action" title="Désactiver" onclick="event.stopPropagation(); toggleUserStatus('{{ user.identifiant_unique }}', 'deactivate')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <i class="fas fa-users display-1 text-muted"></i>
+                                        <h5 class="mt-3">Aucun utilisateur trouvé</h5>
+                                        <p class="text-muted">Aucun utilisateur ne correspond à vos critères de recherche.</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Pagination -->
+                {% if utilisateurs.pages > 1 %}
+                <div class="card-footer bg-white border-0">
+                    <nav aria-label="Navigation des pages">
+                        <ul class="pagination justify-content-center mb-0">
+                            <!-- Page précédente -->
+                            <li class="page-item {% if not utilisateurs.has_prev %}disabled{% endif %}">
+                                <a class="page-link" 
+                                   href="{{ url_for('admin.liste_utilisateurs', page=utilisateurs.prev_num, **filtres) if utilisateurs.has_prev else '#' }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                            
+                            <!-- Pages numérotées -->
+                            {% for page_num in utilisateurs.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+                                {% if page_num %}
+                                    <li class="page-item {% if page_num == utilisateurs.page %}active{% endif %}">
+                                        <a class="page-link" 
+                                           href="{{ url_for('admin.liste_utilisateurs', page=page_num, **filtres) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Page suivante -->
+                            <li class="page-item {% if not utilisateurs.has_next %}disabled{% endif %}">
+                                <a class="page-link" 
+                                   href="{{ url_for('admin.liste_utilisateurs', page=utilisateurs.next_num, **filtres) if utilisateurs.has_next else '#' }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'exportation -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Exporter les utilisateurs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sélectionnez le format d'exportation :</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('admin.export_utilisateurs', format='csv') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-file-csv me-2"></i> CSV
+                    </a>
+                    <a href="{{ url_for('admin.export_utilisateurs', format='excel') }}" class="btn btn-outline-success">
+                        <i class="fas fa-file-excel me-2"></i> Excel
+                    </a>
+                    <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Recherche dans le tableau
+    document.getElementById('searchInput')?.addEventListener('input', function(e) {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+
+    // Toggle de statut utilisateur
+    function toggleUserStatus(userId, action) {
+        if (!confirm(`Êtes-vous sûr de vouloir ${action === 'activate' ? 'réactiver' : 'désactiver'} cet utilisateur ?`)) {
+            return;
+        }
+        
+        fetch(`/admin/utilisateur/${userId}/${action}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.message || 'Une erreur est survenue');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Erreur de connexion');
+        });
+    }
+
+    // Édition utilisateur
+    function editUser(userId) {
+        window.location.href = `/admin/utilisateur/${userId}/edit`;
+    }
+
+    // Empêcher la propagation du clic sur les boutons
+    document.querySelectorAll('.btn-action').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    });
+
+    // Tri des colonnes (exemple basique)
+    let sortDirection = {};
+    document.querySelectorAll('th').forEach((th, index) => {
+        th.style.cursor = 'pointer';
+        th.addEventListener('click', () => {
+            sortDirection[index] = !sortDirection[index];
+            sortTable(index, sortDirection[index]);
+        });
+    });
+
+    function sortTable(column, ascending) {
+        const table = document.querySelector('table');
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        
+        rows.sort((a, b) => {
+            const aText = a.cells[column].textContent.trim();
+            const bText = b.cells[column].textContent.trim();
+            
+            if (column === 0) { // ID
+                return ascending ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            } else if (column === 1) { // Nom
+                return ascending ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            }
+            return 0;
+        });
+        
+        // Réorganiser les lignes
+        rows.forEach(row => tbody.appendChild(row));
+    }
+</script>
+{% endblock %}
