@@ -145,7 +145,11 @@
                     <h5>Liens rapides</h5>
                     <ul class="list-unstyled">
                         <li><a href="{{ url_for('main.index') }}" class="text-white-50">Accueil</a></li>
-                        <li><a href="{{ url_for('main.calculate') }}" class="text-white-50">Calculateur</a></li>
+                        {% if current_user.is_authenticated %}
+                            {% if current_user.est_admin %}
+                                <li><a href="{{ url_for('main.calculate') }}" class="text-white-50">Calculateur</a></li>
+                            {% endif %}
+                        {% endif %}
                         <li><a href="#" class="text-white-50">Conditions d'utilisation</a></li>
                     </ul>
                 </div>
@@ -169,6 +173,7 @@
 </body>
 
 </html>
+
 
 
 
