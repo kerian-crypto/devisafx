@@ -17,11 +17,15 @@ class FormulaireInscription(FlaskForm):
         Email(message='Email invalide')
     ])
     pays = SelectField('Pays', choices=[
+        ('DEU', 'Allemangne'),
         ('CM', 'Cameroun'),
+        ('CN', 'Canada'),
+        ('CN', 'Cote d\'ivoire'),
         ('TH', 'Tchad'),
         ('GA', 'Gabon'),
         ('CF', 'République Centrafricaine'),
-        ('CD', 'RD Congo')
+        ('CD', 'RD Congo'),
+        ('SE', 'Suisse')
     ], validators=[DataRequired()])
     mot_de_passe = PasswordField('Mot de passe', validators=[
         DataRequired(message='Le mot de passe est requis'),
@@ -234,4 +238,5 @@ class FormulaireAjoutWallet(FlaskForm):
             if reseau == 'TRC20' and len(adresse) != 34:
                 raise ValidationError('Les adresses TRC20 doivent contenir 34 caractères')
     
+
 
