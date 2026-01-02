@@ -27,7 +27,8 @@
                     
                     <div class="mb-3">
                         <label for="mot_de_passe" class="form-label">Mot de passe</label>
-                        {{ form.mot_de_passe(class="form-control", placeholder="Votre mot de passe") }}
+                        {{ form.mot_de_passe(class="form-control", placeholder="Votre mot de passe", id='password') }}
+                        <button onclick='toggle()'><i class="bi bi-eye-slash-fill"></i></button>
                         {% if form.mot_de_passe.errors %}
                         <div class="text-danger small mt-1">
                             {% for error in form.mot_de_passe.errors %}
@@ -74,4 +75,11 @@
             </div>
         </div>
     </div>
+    <script>
+        function toggle()=>{
+            const input =document.getElementById('password');
+            input.type=input.type==="password"?"text":"password";
+        }
+    </script>
+
     {% endblock %}
