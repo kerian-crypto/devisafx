@@ -295,6 +295,10 @@
                                             <button type="button" class="btn btn-outline-danger btn-action" title="Désactiver" onclick="event.stopPropagation(); toggleUserStatus('{{ user.identifiant_unique }}', 'deactivate')">
                                                 <i class="fas fa-trash-alt"></i>
                                             </button>
+
+                                            <button type="button" class="btn btn-outline-danger btn-action" title="Supprimer définitivement" onclick="event.stopPropagation(); deleteUser('{{ user.identifiant_unique }}')">
+                                                <i class="fas fa-user-times"></i>
+                                            </button>
                                             {% endif %}
                                         </div>
                                     </td>
