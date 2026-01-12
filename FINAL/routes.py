@@ -484,6 +484,23 @@ def detail_utilisateur(identifiant_unique):
     return render_template('detail_utilisateurs.html',
                          utilisateur=utilisateur,
                          anciennete=anciennete)
+@admin.route('/admin/utilisateur/<string:identifiant_unique>/delete', methods=['POST'])
+@login_required
+# @admin_required 
+def delete_user(identifiant_unique):
+    user = User.query.filter_by(identifiant_unique=identifiant_unique).first_or_404()
+    
+    
+    if user.id == current_user.id:
+        return jsonify({'success': False, 'message': 'Vous ne pouvez pas supprimer votre propre compte.'}), 400
+    
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Utilisateur supprimé avec succès'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @admin_bp.route('/wallet/add', methods=['POST'])
 @login_required
@@ -828,6 +845,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
