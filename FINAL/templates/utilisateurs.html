@@ -464,5 +464,32 @@
         // Réorganiser les lignes
         rows.forEach(row => tbody.appendChild(row));
     }
+    function deleteUser(userId) {
+    if (!confirm('ATTENTION : Cette action est irréversible. Voulez-vous vraiment supprimer définitivement cet utilisateur et toutes ses données ?')) {
+        return;
+    }
+    
+    // Afficher un indicateur de chargement si nécessaire
+    fetch(`/admin/utilisateur/${userId}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // Si vous utilisez CSRF protection, n'oubliez pas le header X-CSRFToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Animation de retrait de la ligne avant rechargement
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur lors de la suppression');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Erreur de connexion au serveur');
+    });
+}
 </script>
 {% endblock %}
