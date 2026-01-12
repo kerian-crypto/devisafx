@@ -488,7 +488,7 @@ def detail_utilisateur(identifiant_unique):
 @login_required
 # @admin_required 
 def delete_user(identifiant_unique):
-    user = User.query.filter_by(identifiant_unique=identifiant_unique).first_or_404()
+    user = Utilisateur.query.filter_by(identifiant_unique=identifiant_unique).first_or_404()
     
     
     if user.id == current_user.id:
@@ -845,6 +845,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
