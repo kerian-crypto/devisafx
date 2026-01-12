@@ -484,7 +484,7 @@ def detail_utilisateur(identifiant_unique):
     return render_template('detail_utilisateurs.html',
                          utilisateur=utilisateur,
                          anciennete=anciennete)
-@admin.route('/admin/utilisateur/<string:identifiant_unique>/delete', methods=['POST'])
+@admin_bp.route('/admin/utilisateur/<string:identifiant_unique>/delete', methods=['POST'])
 @login_required
 # @admin_required 
 def delete_user(identifiant_unique):
@@ -845,6 +845,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
