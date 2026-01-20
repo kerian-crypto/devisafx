@@ -11,19 +11,11 @@ from io import StringIO
 from config import Config
 from models import db, Utilisateur, Transaction, PortefeuilleAdmin, TauxJournalier, Notification
 
-app = Flask(__name__)
-app.config.from_object(Config)
+api_bp = Blueprint("api", __name__)
 
-# Extensions
-db.init_app(app)
-migrate = Migrate(app, db)
-jwt = JWTManager(app)
+API_PREFIX = "/api/v1"
 
-
-# -----------------------
-# AUTHENTIFICATION
-# -----------------------
-@app.route("/api/register", methods=["POST"])
+@app.route(f"{API_PREFIX}/register", methods=["POST"])
 def api_register():
     data = request.get_json()
     email = data.get("email")
@@ -50,7 +42,7 @@ def api_register():
     return jsonify({"success": True, "message": "Inscription réussie"})
 
 
-@app.route("/api/login", methods=["POST"])
+@app.route(f"{API_PREFIX}/login", methods=["POST"])
 def api_login():
     data = request.get_json()
     email = data.get("email")
@@ -63,10 +55,6 @@ def api_login():
     access_token = create_access_token(identity=utilisateur.id)
     return jsonify({"success": True, "access_token": access_token, "is_admin": utilisateur.est_admin})
 
-
-# -----------------------
-# UTILITAIRES
-# -----------------------
 def check_admin():
     user_id = get_jwt_identity()
     user = Utilisateur.query.get(user_id)
@@ -74,11 +62,7 @@ def check_admin():
         return False
     return True
 
-
-# -----------------------
-# DASHBOARD / TRANSACTIONS
-# -----------------------
-@app.route("/api/transactions", methods=["GET"])
+@app.route(f"{API_PREFIX}/transactions", methods=["GET"])
 @jwt_required()
 def api_transactions():
     user_id = get_jwt_identity()
@@ -100,7 +84,7 @@ def api_transactions():
     return jsonify({"success": True, "transactions": data})
 
 
-@app.route("/api/transaction/<string:transaction_id>", methods=["GET"])
+@app.route(f"{API_PREFIX}/transaction/<string:transaction_id>", methods=["GET"])
 @jwt_required()
 def api_transaction_detail(transaction_id):
     user_id = get_jwt_identity()
@@ -122,10 +106,7 @@ def api_transaction_detail(transaction_id):
     return jsonify({"success": True, "transaction": data})
 
 
-# -----------------------
-# ACHAT / VENTE USDT
-# -----------------------
-@app.route("/api/buy", methods=["POST"])
+@app.route(f"{API_PREFIX}/buy", methods=["POST"])
 @jwt_required()
 def api_buy():
     user_id = get_jwt_identity()
@@ -159,7 +140,6 @@ def api_buy():
     db.session.add(transaction)
     db.session.commit()
 
-    # Notification admin
     notif = Notification(
         admin_id=1,
         type_notification="nouvelle_transaction",
@@ -175,7 +155,7 @@ def api_buy():
     })
 
 
-@app.route("/api/sell", methods=["POST"])
+@app.route(f"{API_PREFIX}/sell", methods=["POST"])
 @jwt_required()
 def api_sell():
     user_id = get_jwt_identity()
@@ -222,10 +202,7 @@ def api_sell():
     })
 
 
-# -----------------------
-# ADMIN ROUTES
-# -----------------------
-@app.route("/api/admin/transactions/<string:transaction_id>/validate", methods=["POST"])
+@app.route(f"{API_PREFIX}/admin/transactions/<string:transaction_id>/validate", methods=["POST"])
 @jwt_required()
 def api_validate_transaction(transaction_id):
     if not check_admin():
@@ -249,7 +226,7 @@ def api_validate_transaction(transaction_id):
     return jsonify({"success": True})
 
 
-@app.route("/api/admin/transactions/<string:transaction_id>/reject", methods=["POST"])
+@app.route(f"{API_PREFIX}/admin/transactions/<string:transaction_id>/reject", methods=["POST"])
 @jwt_required()
 def api_reject_transaction(transaction_id):
     if not check_admin():
@@ -275,7 +252,7 @@ def api_reject_transaction(transaction_id):
     return jsonify({"success": True})
 
 
-@app.route("/api/admin/users", methods=["GET"])
+@app.route(f"{API_PREFIX}/admin/users", methods=["GET"])
 @jwt_required()
 def api_list_users():
     if not check_admin():
@@ -292,7 +269,7 @@ def api_list_users():
     return jsonify({"success": True, "users": data})
 
 
-@app.route("/api/admin/wallets", methods=["GET", "POST"])
+@app.route(f"{API_PREFIX}/admin/wallets", methods=["GET", "POST"])
 @jwt_required()
 def api_wallets():
     if not check_admin():
@@ -314,7 +291,7 @@ def api_wallets():
     return jsonify({"success": True, "wallets": data})
 
 
-@app.route("/api/admin/rates", methods=["GET", "POST"])
+@app.route(f"{API_PREFIX}/admin/rates", methods=["GET", "POST"])
 @jwt_required()
 def api_rates():
     if not check_admin():
@@ -341,7 +318,7 @@ def api_rates():
     return jsonify({"success": True, "rates": data})
 
 
-@app.route("/api/admin/rates/export", methods=["GET"])
+@app.route(f"{API_PREFIX}/admin/rates/export", methods=["GET"])
 @jwt_required()
 def api_export_rates():
     if not check_admin():
@@ -361,11 +338,7 @@ def api_export_rates():
     response.headers["Content-type"] = "text/csv"
     return response
 
-
-# -----------------------
-# NOTIFICATIONS
-# -----------------------
-@app.route("/api/notifications", methods=["GET"])
+@app.route(f"{API_PREFIX}/notifications", methods=["GET"])
 @jwt_required()
 def api_notifications():
     user_id = get_jwt_identity()
@@ -376,7 +349,7 @@ def api_notifications():
     return jsonify({"success": True, "notifications": data})
 
 
-@app.route("/api/notifications/<int:notif_id>/read", methods=["POST"])
+@app.route(f"{API_PREFIX}/notifications/<int:notif_id>/read", methods=["POST"])
 @jwt_required()
 def api_mark_notification_read(notif_id):
     user_id = get_jwt_identity()
@@ -387,14 +360,7 @@ def api_mark_notification_read(notif_id):
     db.session.commit()
     return jsonify({"success": True})
 
-
-# -----------------------
-# HEALTH CHECK
-# -----------------------
-@app.route("/api/health-check", methods=["GET"])
+@app.route(f"{API_PREFIX}/health-check", methods=["GET"])
 def health_check():
     return jsonify({"success": True, "status": "OK"})
 
-
-if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
