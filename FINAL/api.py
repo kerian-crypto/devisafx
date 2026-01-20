@@ -7,6 +7,7 @@ from datetime import datetime, date, timedelta
 import hashlib
 import csv
 from io import StringIO
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from config import Config
 from models import db, Utilisateur, Transaction, PortefeuilleAdmin, TauxJournalier, Notification
@@ -15,52 +16,51 @@ api_bp = Blueprint("api", __name__)
 
 API_PREFIX = "/api/v1"
 
-@api_bp.route(f"{API_PREFIX}/register", methods=["POST"])
+@api_bp.route(f"{API_PREFIX}/auth/register", methods=["POST"])
 def api_register():
-    data = request.get_json()
-    email = data.get("email")
-    mot_de_passe = data.get("mot_de_passe")
-    nom = data.get("nom")
-    telephone = data.get("telephone")
-    pays = data.get("pays")
+    data = request.get_json() or {}
 
-    if Utilisateur.query.filter_by(email=email).first():
+    required = ["email", "mot_de_passe", "nom", "telephone", "pays"]
+    for field in required:
+        if not data.get(field):
+            return jsonify({"success": False, "message": f"{field} manquant"}), 400
+
+    if Utilisateur.query.filter_by(email=data["email"]).first():
         return jsonify({"success": False, "message": "Email déjà utilisé"}), 400
-    if Utilisateur.query.filter_by(telephone=telephone).first():
-        return jsonify({"success": False, "message": "Téléphone déjà utilisé"}), 400
 
-    utilisateur = Utilisateur(
-        nom=nom,
-        email=email,
-        telephone=telephone,
-        pays=pays,
-        mot_de_passe_hash=hashlib.sha256(mot_de_passe.encode()).hexdigest()
+    user = Utilisateur(
+        nom=data["nom"],
+        email=data["email"],
+        telephone=data["telephone"],
+        pays=data["pays"],
+        mot_de_passe_hash=generate_password_hash(data["mot_de_passe"])
     )
-    db.session.add(utilisateur)
+    db.session.add(user)
     db.session.commit()
 
-    return jsonify({"success": True, "message": "Inscription réussie"})
+    return jsonify({"success": True, "message": "Compte créé"})
 
-
-@api_bp.route(f"{API_PREFIX}/login", methods=["POST"])
+@api_bp.route(f"{API_PREFIX}/auth/login", methods=["POST"])
 def api_login():
-    data = request.get_json()
-    email = data.get("email")
-    mot_de_passe = data.get("mot_de_passe")
-    utilisateur = Utilisateur.query.filter_by(email=email).first()
+    data = request.get_json() or {}
 
-    if not utilisateur or utilisateur.mot_de_passe_hash != hashlib.sha256(mot_de_passe.encode()).hexdigest():
-        return jsonify({"success": False, "message": "Email ou mot de passe incorrect"}), 401
+    user = Utilisateur.query.filter_by(email=data.get("email")).first()
+    if not user or not check_password_hash(user.mot_de_passe_hash, data.get("mot_de_passe")):
+        return jsonify({"success": False, "message": "Identifiants invalides"}), 401
 
-    access_token = create_access_token(identity=utilisateur.id)
-    return jsonify({"success": True, "access_token": access_token, "is_admin": utilisateur.est_admin})
+    token = create_access_token(identity=user.id)
 
-def check_admin():
-    user_id = get_jwt_identity()
-    user = Utilisateur.query.get(user_id)
-    if not user or not user.est_admin:
-        return False
-    return True
+    return jsonify({
+        "success": True,
+        "token": token,
+        "user": {
+            "id": user.id,
+            "nom": user.nom,
+            "email": user.email,
+            "is_admin": user.est_admin
+        }
+    })
+
 
 @api_bp.route(f"{API_PREFIX}/transactions", methods=["GET"])
 @jwt_required()
@@ -363,6 +363,7 @@ def api_mark_notification_read(notif_id):
 @api_bp.route(f"{API_PREFIX}/health-check", methods=["GET"])
 def health_check():
     return jsonify({"success": True, "status": "OK"})
+
 
 
 
