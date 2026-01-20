@@ -1,5 +1,5 @@
 # api_complete.py
-from flask import Flask, request, jsonify, make_response
+from flask import Flask,Blueprint, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -363,4 +363,5 @@ def api_mark_notification_read(notif_id):
 @app.route(f"{API_PREFIX}/health-check", methods=["GET"])
 def health_check():
     return jsonify({"success": True, "status": "OK"})
+
 
