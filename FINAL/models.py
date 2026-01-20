@@ -38,6 +38,20 @@ class Utilisateur(UserMixin, db.Model):
     def __repr__(self):
         return f'<Utilisateur {self.nom} ({self.email})>'
 
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "uuid": self.identifiant_unique,
+            "nom": self.nom,
+            "email": self.email,
+            "telephone": self.telephone,
+            "pays": self.pays,
+            "email_verifie": self.email_verifie,
+            "est_admin": self.est_admin,
+            "est_actif": self.est_actif,
+            "date_inscription": self.date_inscription.isoformat()
+        }
+
 
 class Transaction(db.Model):
     """
@@ -253,6 +267,7 @@ class ParametreSysteme(db.Model):
             )
             db.session.add(param)
         db.session.commit()
+
 
 
 
