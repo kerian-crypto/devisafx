@@ -9,6 +9,7 @@ from config import Config
 from models import db, Utilisateur
 from routes import main_bp, admin_bp
 from auth import auth_bp
+from api import api_bp
 
 
 """Factory pour créer l'application Flask"""
@@ -39,6 +40,7 @@ def load_user(user_id):
 app.register_blueprint(main_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(auth_bp)
+app.register_blueprint(api_bp)
 
 @app.route('/health-check')
 def health_check():
@@ -47,6 +49,7 @@ def health_check():
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
 
 
 
