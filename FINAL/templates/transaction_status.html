@@ -193,7 +193,7 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        {% if {{ transaction.operateur_mobile }}=="MTN" %}
+                                                        {% if transaction.operateur_mobile == "MTN" %}
                                                             <a href="tel:#150*14*505874*{{ numero }}*{{ montant_xaf|int}}#>
                                                         {% else %}
                                                                <a href="tel:*126*14*{{ numero }}*{{ montant_xaf|int}}#> 
@@ -468,6 +468,7 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
 </script>
 
 {% endblock %}
+
 
 
 
