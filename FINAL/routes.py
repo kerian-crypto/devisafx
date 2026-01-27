@@ -141,10 +141,10 @@ def buy():
         
         if form.operateur_mobile.data=='MTN':
             code_encode=f"*126*14*{numero}*{montant_xaf}#"
-            code=code = urllib.parse.quote(code_encode)
         else:
             code_encode=f"#150*14*505874*{numero}*{montant_xaf}"
-            code = urllib.parse.quote(code_encode)
+
+        code = urllib.parse.quote(code_encode)
 
         transaction = Transaction(
             utilisateur_id=current_user.id,
@@ -856,6 +856,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
