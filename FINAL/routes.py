@@ -135,6 +135,11 @@ def buy():
 
         numero = portefeuille.adresse
         adresse = None  # facultatif pour l'achat
+        
+        if form.operateur_mobile.data=='MTN':
+            code=f"*126*14*{numero}*{montant_xaf}#"
+        else:
+            code=f"#150*14*505874*{numero}*{montant_xaf}"
 
         transaction = Transaction(
             utilisateur_id=current_user.id,
@@ -163,6 +168,7 @@ def buy():
         return redirect(url_for('main.transaction_status',
                                 transaction_id=transaction.identifiant_transaction,
                                 numero=numero,
+                                code=code,
                                 adresse=adresse))
 
     return render_template('buy.html', form=form, taux_vente=taux_vente)
@@ -845,6 +851,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
