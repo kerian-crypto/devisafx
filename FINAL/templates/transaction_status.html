@@ -3,318 +3,910 @@
 {% block title %}Statut de transaction - Devisa-FX{% endblock %}
 
 {% block styles %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
-<style>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}"><style>
+  
     .progress-tracker {
+  
         display: flex;
+  
         justify-content: space-between;
+  
         position: relative;
+  
         margin: 2rem 0;
+  
     }
+  
     .progress-tracker:before {
+  
         content: '';
+  
         position: absolute;
+  
         top: 15px;
+  
         left: 0;
+  
         right: 0;
+  
         height: 2px;
+  
         background: #e0e0e0;
+  
         z-index: 1;
+  
     }
+  
     .progress-step {
+  
         text-align: center;
+  
         position: relative;
+  
         z-index: 2;
+  
         width: 20%;
+  
     }
+  
     .step-icon {
+  
         width: 32px;
+  
         height: 32px;
+  
         border-radius: 50%;
+  
         background: #e0e0e0;
+  
         display: flex;
+  
         align-items: center;
+  
         justify-content: center;
+  
         margin: 0 auto 10px;
+  
         color: #666;
+  
     }
+  
     .step-icon.active {
+  
         background: var(--secondary-color);
+  
         color: white;
+  
     }
+  
     .step-icon.completed {
+  
         background: var(--success-color);
+  
         color: white;
+  
     }
+  
     .step-text {
+  
         font-size: 0.85rem;
+  
         color: #666;
+  
     }
+  
     .step-text.active {
+  
         color: var(--secondary-color);
+  
         font-weight: 600;
+  
     }
-</style>
-{% endblock %}
+  
+</style>{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+
+<div class="row justify-content-center"><div class="col-lg-8">
+
+    <div class="card">
+
+        <div class="card-header">
+
+            <div class="d-flex justify-content-between align-items-center">
+
                 <h4 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Détails de la transaction</h4>
+
                 <span class="status-badge status-{{ transaction.statut }}">
+
                     {{ transaction.statut.replace('_', ' ') }}
+
                 </span>
-            </div>
-            <div class="card-body">
-
-                <!-- Progression de la transaction -->
-                <div class="progress-tracker">
-                    {% set steps = ['initiee', 'en_attente', 'valide', 'complete'] %}
-                    {% set step_labels = ['Initée', 'En attente', 'Validée', 'Complétée'] %}
-                    {% set step_icons = ['fa-file-alt', 'fa-clock', 'fa-check-circle', 'fa-check-double'] %}
-
-                    {% for i in range(4) %}
-                    <div class="progress-step">
-                        <div class="step-icon 
-                            {% if transaction.statut == steps[i] %}active
-                            {% elif steps.index(transaction.statut) > i %}completed
-                            {% endif %}">
-                            <i class="fas {{ step_icons[i] }}"></i>
-                        </div>
-                        <div class="step-text 
-                            {% if transaction.statut == steps[i] %}active
-                            {% elif steps.index(transaction.statut) > i %}fw-bold{% endif %}">
-                            {{ step_labels[i] }}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-
-                <!-- Détails principaux -->
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h6>Référence transaction</h6>
-                        <p class="fs-5">{{ transaction.identifiant_transaction }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Date de création</h6>
-                        <p>{{ transaction.date_creation.strftime('%d/%m/%Y à %H:%M') }}</p>
-                    </div>
-                </div>
-
-                <!-- Informations principales -->
-                <div class="alert {% if transaction.type_transaction == 'achat' %}alert-primary{% else %}alert-success{% endif %} mb-4">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h5>
-                                {% if transaction.type_transaction == 'achat' %}Achat de USDT{% else %}Vente de USDT{% endif %}
-                            </h5>
-                            <p class="mb-0">
-                                {% if transaction.type_transaction == 'achat' %}
-                                    Montant: <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong>
-                                {% else %}
-                                    Montant: <strong>{{ transaction.montant_usdt }} USDT</strong>
-                                {% endif %}
-                            </p>
-                        </div>
-                        <div class="col-md-6">
-                            <h5>Vous recevez</h5>
-                            <p class="mb-0">
-                                {% if transaction.type_transaction == 'achat' %}
-                                    <strong>{{ transaction.montant_usdt }} USDT</strong> sur {{ transaction.reseau }}
-                                {% else %}
-                                    <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> via {{ transaction.operateur_mobile }}
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Instructions de paiement -->
-                {% if transaction.statut == 'en_attente' %}
-                <div class="card mb-4">
-                    <div class="card-header bg-warning text-dark">
-                        <i class="fas fa-exclamation-triangle me-2"></i>Instructions de paiement
-                    </div>
-                    <div class="card-body">
-                        {% if transaction.type_transaction == 'achat' %}
-                        <div class="transaction-info">
-                            <h5>Effectuez le paiement mobile money</h5>
-                            <div class="alert alert-danger text-center">
-                                <p><strong>Numéro marchand :</strong></p>
-                                <h3>{{ numero }}</h3>
-                                <p><strong>Montant exact à payer :</strong></p>
-                                <h3>{{ formater_montant(transaction.montant_xaf) }} XAF</h3>
-                            </div>
-                            <div class="warning-box">
-                                <h6><i class="fas fa-ban me-2"></i>ATTENTION IMPORTANTE</h6>
-                                <ul class="mb-0">
-                                    <li>Payer le montant EXACT indiqué</li>
-                                    <li>Tout paiement différent sera REJETÉ</li>
-                                    <li>Les fonds d'un paiement erroné seront RETENUS</li>
-                                    <li>Le numéro marchand est unique à cette transaction</li>
-                                    <li>Conservez le reçu de paiement</li>
-                                </ul>
-                            </div>
-                            <div class="d-flex justify-content-between mt-4">
-                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord
-                                </a>
-                                <div>
-                                    <button class="btn btn-outline-danger me-2"><i class="fas fa-times me-2"></i>Annuler</button>
-                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
-                                        <i class="fas fa-check me-2"></i>Continuer le paiement
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        {% else %}
-                        <div class="transaction-info">
-                            <h5>Envoyez les USDT</h5>
-                            <div class="alert alert-danger text-center">
-                                <p><strong>Adresse de réception :</strong></p>
-                                <h5>
-                                    <code id="wallet-address">{{ adresse }}</code>
-                                    <button class="btn btn-sm btn-outline-secondary ms-2 copy-wallet" data-address="{{ transaction.adresse_wallet }}">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                </h5>
-                                <p><strong>Montant exact :</strong> {{ transaction.montant_usdt }} USDT</p>
-                                <p><strong>Réseau :</strong> {{ transaction.reseau }}</p>
-                            </div>
-                            <div class="warning-box">
-                                <h6><i class="fas fa-ban me-2"></i>ATTENTION IMPORTANTE</h6>
-                                <ul class="mb-0">
-                                    <li>Envoyez le montant EXACT indiqué</li>
-                                    <li>Vérifiez que le réseau correspond</li>
-                                    <li>Tout envoi incorrect sera REJETÉ</li>
-                                    <li>Les fonds erronés seront RETENUS</li>
-                                    <li>Cette adresse est unique à cette transaction</li>
-                                </ul>
-                            </div>
-                            <div class="d-flex justify-content-between mt-4">
-                                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
-                                    <i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord
-                                </a>
-                                <div>
-                                    <button class="btn btn-outline-danger me-2"><i class="fas fa-times me-2"></i>Annuler</button>
-                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sentModal">
-                                        <i class="fas fa-check me-2"></i>Continuer l'envoi
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Informations détaillées -->
-                <div class="card mb-4">
-                    <div class="card-header"><i class="fas fa-info-circle me-2"></i>Informations détaillées</div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <table class="table table-borderless">
-                                    <tr>
-                                        <th>Type de transaction:</th>
-                                        <td>
-                                            {% if transaction.type_transaction == 'achat' %}
-                                                <span class="badge bg-primary">Achat USDT</span>
-                                            {% else %}
-                                                <span class="badge bg-success">Vente USDT</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    <tr><th>Réseau:</th><td>{{ transaction.reseau }}</td></tr>
-                                    {% if transaction.type_transaction == 'achat' %}
-                                        <tr><th>Adresse de réception:</th><td><code>{{ transaction.adresse_wallet|truncate(20) }}</code></td></tr>
-                                    {% else %}
-                                        <tr><th>Numéro de réception:</th><td>{{ transaction.numero_mobile }}</td></tr>
-                                        <tr><th>Adresse MARCHAND:</th><td>{{ adresse }}</td></tr>
-                                    {% endif %}
-                                </table>
-                            </div>
-                            <div class="col-md-6">
-                                <table class="table table-borderless">
-                                    <tr><th>Taux appliqué:</th><td>{{ transaction.taux_applique|round(2) }} XAF/USDT</td></tr>
-                                    <tr><th>Opérateur:</th><td>{{ transaction.operateur_mobile }}</td></tr>
-                                    {% if transaction.date_validation %}
-                                        <tr><th>Date de validation:</th><td>{{ transaction.date_validation.strftime('%d/%m/%Y à %H:%M') }}</td></tr>
-                                    {% endif %}
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Statut actuel -->
-                {% if transaction.statut == 'en_attente' %}
-                    <div class="text-center py-4">
-                        <div class="loading-spinner mb-3"></div>
-                        <h5>En attente de votre action</h5>
-                        <p class="text-muted">
-                            {% if transaction.type_transaction == 'achat' %}
-                                Effectuez le paiement mobile money pour poursuivre la transaction
-                            {% else %}
-                                Envoyez les USDT à l'adresse indiquée pour poursuivre la transaction
-                            {% endif %}
-                        </p>
-                    </div>
-                {% elif transaction.statut == 'valide' %}
-                    <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i>
-                        <strong>Transaction validée !</strong> Notre équipe traite votre transaction. Vous recevrez vos fonds sous peu.
-                    </div>
-                {% elif transaction.statut == 'complete' %}
-                    <div class="alert alert-success"><i class="fas fa-check-double me-2"></i>
-                        <strong>Transaction complétée !</strong> Les fonds ont été transférés avec succès.
-                    </div>
-                {% elif transaction.statut == 'rejete' %}
-                    <div class="alert alert-danger"><i class="fas fa-times-circle me-2"></i>
-                        <strong>Transaction rejetée</strong>
-                        {% if transaction.motif_rejet %}
-                            <p class="mb-0 mt-2"><strong>Motif :</strong> {{ transaction.motif_rejet }}</p>
-                        {% endif %}
-                    </div>
-                {% endif %}
 
             </div>
+
         </div>
+
+        <div class="card-body">
+
+            
+
+            <!-- Progression de la transaction -->
+
+            <div class="progress-tracker">
+
+                {% set steps = ['initiee', 'en_attente','rejete', 'valide', 'complete'] %}
+
+                {% set step_labels = ['Initée', 'En attente', 'Validée', 'Complétée'] %}
+
+                {% set step_icons = ['fa-file-alt', 'fa-clock', 'fa-check-circle', 'fa-check-double'] %}
+
+                
+
+                {% for i in range(4) %}
+
+                <div class="progress-step">
+
+                    <div class="step-icon 
+
+                        {% if transaction.statut == steps[i] %}active
+
+                        {% elif loop.index0 < steps.index(transaction.statut) %}completed
+
+                        {% endif %}">
+
+                        <i class="fas {{ step_icons[i] }}"></i>
+
+                    </div>
+
+                    <div class="step-text 
+
+                        {% if transaction.statut == steps[i] %}active
+
+                        {% elif loop.index0 < steps.index(transaction.statut) %}fw-bold{% endif %}">
+
+                        {{ step_labels[i] }}
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            
+
+            <!-- Détails de la transaction -->
+
+            <div class="row mb-4">
+
+                <div class="col-md-6">
+
+                    <h6>Référence transaction</h6>
+
+                    <p class="fs-5">{{ transaction.identifiant_transaction }}</p>
+
+                </div>
+
+                <div class="col-md-6">
+
+                    <h6>Date de création</h6>
+
+                    <p>{{ transaction.date_creation.strftime('%d/%m/%Y à %H:%M') }}</p>
+
+                </div>
+
+            </div>
+
+            
+
+            <!-- Informations principales -->
+
+            <div class="alert 
+
+                {% if transaction.type_transaction == 'achat' %}alert-primary
+
+                {% else %}alert-success{% endif %} mb-4">
+
+                <div class="row">
+
+                    <div class="col-md-6">
+
+                        <h5>
+
+                            {% if transaction.type_transaction == 'achat' %}
+
+                            Achat de USDT
+
+                            {% else %}
+
+                            Vente de USDT
+
+                            {% endif %}
+
+                        </h5>
+
+                        <p class="mb-0">
+
+                            {% if transaction.type_transaction == 'achat' %}
+
+                            Montant: <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong>
+
+                            {% else %}
+
+                            Montant: <strong>{{ transaction.montant_usdt }} USDT</strong>
+
+                            {% endif %}
+
+                        </p>
+
+                    </div>
+
+                    <div class="col-md-6">
+
+                        <h5>Vous recevez</h5>
+
+                        <p class="mb-0">
+
+                            {% if transaction.type_transaction == 'achat' %}
+
+                            <strong>{{ transaction.montant_usdt }} USDT</strong> sur {{ transaction.reseau }}
+
+                            {% else %}
+
+                            <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> via {{ transaction.operateur_mobile }}
+
+                            {% endif %}
+
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            
+
+            <!-- Instructions de paiement -->
+
+            {% if transaction.statut == 'en_attente' %}
+
+            <div class="card mb-4">
+
+                <div class="card-header bg-warning text-dark">
+
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+
+                    Instructions de paiement
+
+                </div>
+
+                <div class="card-body">
+
+                    {% if transaction.type_transaction == 'achat' %}
+
+                    <div class="transaction-info">
+
+                        <h5>Effectuez le paiement mobile money</h5>
+
+                        <div class="alert alert-danger">
+
+                            <p class="mb-2"><strong>Numéro marchand :</strong></p>
+
+                            <h3 class="text-center mb-3">{{ numero }}</h3>
+
+                            <p class="mb-2"><strong>Montant exact à payer :</strong></p>
+
+                            <h3 class="text-center">{{ formater_montant(transaction.montant_xaf) }} XAF</h3>
+
+                        </div>
+
+                        
+
+                        <div class="warning-box">
+
+                            <h6><i class="fas fa-ban me-2"></i>ATTENTION IMPORTANTE</h6>
+
+                            <ul class="mb-0">
+
+                                <li>Effectuez le paiement du montant EXACT indiqué</li>
+
+                                <li>Tout paiement d'un montant différent sera REJETÉ</li>
+
+                                <li>Les fonds d'un paiement erroné seront RETENUS</li>
+
+                                <li>Le numéro marchand est unique à cette transaction</li>
+
+                                <li>Conservez le reçu de paiement</li>
+
+                            </ul>
+
+                        </div>
+
+                        <!-- Actions -->
+
+                        <div class="d-flex justify-content-between mt-4">
+
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+
+                                <i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord
+
+                            </a>
+
+                
+
+                            {% if transaction.statut == 'en_attente' %}
+
+                                <div>
+
+                                    <button class="btn btn-outline-danger me-2">
+
+                                        <i class="fas fa-times me-2"></i>Annuler
+
+                                    </button>
+
+                                {% if transaction.type_transaction == 'achat' %}
+
+                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
+
+                                        <i class="fas fa-check me-2"></i> Voulez-vous continuer le paiement
+
+                                    </button>
+
+                                
+
+                                    <!-- Modal -->
+
+                                    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+
+                                        <div class="modal-dialog">
+
+                                            <div class="modal-content">
+
+                                                <div class="modal-header">
+
+                                                    <h5 class="modal-title">Confirmez votre paiement</h5>
+
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+                                                </div>
+
+                                                <div class="modal-body">
+
+                                                    {% if transaction.operateur_mobile == "MTN" %}
+
+                                                        <a href="tel:#150*14*505874*{{ numero }}*{{transaction.montant_xaf}}#">
+
+                                                            <i class="fas fa-check me-2"></i> payer
+
+                                                        </a>
+
+                                                    {% else %}
+
+                                                           <a href="tel:*126*14*{{ numero }}*{{ transaction.montant_xaf }}#"> 
+
+                                                                <i class="fas fa-check me-2"></i> payer
+
+                                                            </a>
+
+                                                    {% endif %}
+
+                                                        
+
+                                                    
+
+                                                        
+
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                {% else %}
+
+                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sentModal">
+
+                                        <i class="fas fa-check me-2"></i> Voulez-vous continuer l'envoi
+
+                                    </button>
+
+                                {% endif %}
+
+
+
+                                </div>
+
+                            {% endif %}
+
+                            </div>
+
+                        
+
+                        
+
+                        <p>Après avoir effectué le paiement, notre équipe vérifiera la transaction et vous enverra les USDT sur l'adresse indiquée.</p>
+
+                    </div>
+
+                    {% else %}
+
+                    <div class="transaction-info">
+
+                        <h5>Envoyez les USDT</h5>
+
+                        <div class="alert alert-danger">
+
+                            <p class="mb-2"><strong>Adresse de réception :</strong></p>
+
+                            <h5 class="text-center mb-3">
+
+                                <code id="wallet-address">{{ adresse }}</code>
+
+                                <button class="btn btn-sm btn-outline-secondary ms-2 copy-wallet" data-address="{{ transaction.adresse_wallet }}">
+
+                                    <i class="fas fa-copy"></i>
+
+                                </button>
+
+                            </h5>
+
+                            <p class="mb-2"><strong>Montant exact à envoyer :</strong></p>
+
+                            <h3 class="text-center">{{ transaction.montant_usdt }} USDT</h3>
+
+                            <p class="mb-0 text-center"><strong>Réseau :</strong> {{ transaction.reseau }}</p>
+
+                        </div>
+
+                        
+
+                        <div class="warning-box">
+
+                            <h6><i class="fas fa-ban me-2"></i>ATTENTION IMPORTANTE</h6>
+
+                            <ul class="mb-0">
+
+                                <li>Envoyez le montant EXACT en USDT indiqué</li>
+
+                                <li>Vérifiez que le réseau correspond</li>
+
+                                <li>Tout envoi d'un montant différent sera REJETÉ</li>
+
+                                <li>Les fonds d'un envoi erroné seront RETENUS</li>
+
+                                <li>Cette adresse est unique à cette transaction</li>
+
+                            </ul>
+
+                        </div>
+
+                        <!-- Actions -->
+
+                        <div class="d-flex justify-content-between mt-4">
+
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+
+                                <i class="fas fa-arrow-left me-2"></i>Retour au tableau de bord
+
+                            </a>
+
+                
+
+                            {% if transaction.statut == 'en_attente' %}
+
+                            <div>
+
+                                <button class="btn btn-outline-danger me-2">
+
+                                    <i class="fas fa-times me-2"></i>Annuler
+
+                                </button>
+
+                                {% if transaction.type_transaction == 'achat' %}
+
+                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
+
+                                        <i class="fas fa-check me-2"></i>voulez vous continuer le paiement
+
+                                    </button>
+
+                                {% else %}
+
+                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sentModal">
+
+                                        <i class="fas fa-check me-2"></i>voulez vous continuer l'envoi
+
+                                    </button>
+
+                                {% endif %}
+
+                            </div>
+
+                            {% endif %}
+
+                        </div>
+
+                        
+
+                        <p>Après avoir envoyé les USDT, notre équipe vérifiera la transaction et vous enverra les XAF sur votre compte mobile money.</p>
+
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+            
+
+            <!-- Informations détaillées -->
+
+            <div class="card mb-4">
+
+                <div class="card-header">
+
+                    <i class="fas fa-info-circle me-2"></i>Informations détaillées
+
+                </div>
+
+                <div class="card-body">
+
+                    <div class="row">
+
+                        <div class="col-md-6">
+
+                            <table class="table table-borderless">
+
+                                <tr>
+
+                                    <th>Type de transaction:</th>
+
+                                    <td>
+
+                                        {% if transaction.type_transaction == 'achat' %}
+
+                                        <span class="badge bg-primary">Achat USDT</span>
+
+                                        {% else %}
+
+                                        <span class="badge bg-success">Vente USDT</span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                                <tr>
+
+                                    <th>Réseau:</th>
+
+                                    <td>{{ transaction.reseau }}</td>
+
+                                </tr>
+
+                                {% if transaction.type_transaction == 'achat' %}
+
+                                <tr>
+
+                                    <th>Adresse de réception:</th>
+
+                                    <td><code>{{ transaction.adresse_wallet|truncate(20) }}</code></td>
+
+                                </tr>
+
+                                {% else %}
+
+                                <tr>
+
+                                    <th>Numéro de réception:</th>
+
+                                    <td>{{ transaction.numero_mobile }}</td>
+
+                                </tr>
+
+                                <tr>
+
+                                    <th>Adresse MARCHAND:</th>
+
+                                    <td>{{ adresse }}</td>
+
+                                </tr>
+
+                                {% endif %}
+
+                            </table>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <table class="table table-borderless">
+
+                                <tr>
+
+                                    <th>Taux appliqué:</th>
+
+                                    <td>{{ transaction.taux_applique|round(2) }} XAF/USDT</td>
+
+                                </tr>
+
+                                <tr>
+
+                                    <th>Opérateur:</th>
+
+                                    <td>{{ transaction.operateur_mobile }}</td>
+
+                                </tr>
+
+                                {% if transaction.date_validation %}
+
+                                <tr>
+
+                                    <th>Date de validation:</th>
+
+                                    <td>{{ transaction.date_validation.strftime('%d/%m/%Y à %H:%M') }}</td>
+
+                                </tr>
+
+                                {% endif %}
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            
+
+            <!-- Statut actuel -->
+
+            {% if transaction.statut == 'en_attente' %}
+
+            <div class="text-center py-4">
+
+                <div class="loading-spinner mb-3"></div>
+
+                <h5>En attente de votre action</h5>
+
+                <p class="text-muted">
+
+                    {% if transaction.type_transaction == 'achat' %}
+
+                    Effectuez le paiement mobile money pour poursuivre la transaction
+
+                    {% else %}
+
+                    Envoyez les USDT à l'adresse indiquée pour poursuivre la transaction
+
+                    {% endif %}
+
+                </p>
+
+            </div>
+
+            {% elif transaction.statut == 'valide' %}
+
+            <div class="alert alert-success">
+
+                <i class="fas fa-check-circle me-2"></i>
+
+                <strong>Transaction validée !</strong> 
+
+                Notre équipe traite votre transaction. Vous recevrez vos fonds sous peu.
+
+            </div>
+
+            {% elif transaction.statut == 'complete' %}
+
+            <div class="alert alert-success">
+
+                <i class="fas fa-check-double me-2"></i>
+
+                <strong>Transaction complétée !</strong> 
+
+                Les fonds ont été transférés avec succès.
+
+            </div>
+
+            {% elif transaction.statut == 'rejete' %}
+
+            <div class="alert alert-danger">
+
+                <i class="fas fa-times-circle me-2"></i>
+
+                <strong>Transaction rejetée</strong>
+
+                {% if transaction.motif_rejet %}
+
+                <p class="mb-0 mt-2"><strong>Motif :</strong> {{ transaction.motif_rejet }}</p>
+
+                {% endif %}
+
+            </div>
+
+            {% endif %}
+
+            
+
+        </div>
+
     </div>
+
 </div>
 
-<!-- Modals -->
-{% include 'modals/transaction_modals.html' %}
+</div><!-- Modal confirmation paiement --><div class="modal fade" id="paymentModal" tabindex="-1"><div class="modal-dialog">
 
-{% endblock %}
+    <div class="modal-content">
+
+        <div class="modal-header">
+
+            <h5 class="modal-title">Confirmer le paiement</h5>
+
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <p>Avez-vous effectué le paiement de <strong>{{ formater_montant(transaction.montant_xaf) }} XAF</strong> au numéro <strong>{{ numero }}</strong> ?</p>
+
+            <div class="alert alert-info">
+
+                <i class="fas fa-info-circle me-2"></i>
+
+                Après confirmation, notre équipe vérifiera le paiement et procédera à l'envoi des 
+
+                <div class="modal-footer">
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non, pas encore</button>
+
+                    <button type="button" class="btn btn-primary" onclick="confirmPayment()">Oui, j'ai payé</button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        
+
+    </div>
+
+</div>
+
+</div><!-- Modal confirmation envoi USDT --><div class="modal fade" id="sentModal" tabindex="-1"><div class="modal-dialog">
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+
+            <h5 class="modal-title">Confirmer l'envoi</h5>
+
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+        </div>
+
+        <div class="modal-body">
+
+            <p>
+
+                Avez-vous envoyé <strong>{{ transaction.montant_usdt }} USDT</strong>
+
+                {% if adresse %}
+
+                    à l'adresse <code>{{ adresse|truncate(20) }}</code>
+
+                {% else %}
+
+                    à une adresse non définie
+
+                {% endif %}
+
+                    sur le réseau <strong>{{ transaction.reseau }}</strong> ?
+
+            </p>
+
+        </div>
+
+
+
+            <div class="alert alert-info">
+
+                <i class="fas fa-info-circle me-2"></i>
+
+                Après confirmation, notre équipe vérifiera la transaction et procédera à l'envoi des XAF.
+
+            </div>
+
+        </div>
+
+        <div class="modal-footer">
+
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non, pas encore</button>
+
+            <button type="button" class="btn btn-primary" onclick="confirmSent()">Oui, j'ai envoyé</button>
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>{% endblock %}
 
 {% block scripts %}
+
 <script>
+  
 function confirmPayment() {
+  
     alert('Merci ! Notre équipe va vérifier votre paiement et vous enverra les USDT sous peu.');
+  
     window.location.reload();
+  
 }
+  
+
+  
 function confirmSent() {
+  
     alert('Merci ! Notre équipe va vérifier la transaction et vous enverra les XAF sur votre compte mobile money.');
+  
     window.location.reload();
+  
 }
+  
+
+  
+// Copier l'adresse wallet
+  
 document.querySelectorAll('.copy-wallet').forEach(button => {
+  
     button.addEventListener('click', function() {
+  
         const address = this.getAttribute('data-address');
+  
         navigator.clipboard.writeText(address).then(() => {
+  
             const originalHTML = this.innerHTML;
+  
             this.innerHTML = '<i class="fas fa-check"></i>';
+  
             this.classList.remove('btn-outline-secondary');
+  
             this.classList.add('btn-success');
+  
+            
+  
             setTimeout(() => {
+  
                 this.innerHTML = originalHTML;
+  
                 this.classList.remove('btn-success');
+  
                 this.classList.add('btn-outline-secondary');
+  
             }, 2000);
+  
         });
+  
     });
+  
 });
+  
 </script>
 {% endblock %}
