@@ -193,9 +193,14 @@
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body">
-                                                        <a href="tel:{{ code }}" class="btn btn-success w-100">
-                                                            <i class="fas fa-check me-2"></i> payer
-                                                        </a>
+                                                        {% if {{ transaction.operateur_mobile }}=="MTN" %}
+                                                            <a href="tel:#150*14*505874*{{ numero }}*{{ montant_xaf|int}}#>
+                                                        {% else %}
+                                                               <a href="tel:*126*14*{{ numero }}*{{ montant_xaf|int}}#> 
+                                                                <i class="fas fa-check me-2"></i> payer
+                                                            </a>
+                                                        
+                                                            
                                                     </div>
                                                 </div>
                                             </div>
@@ -463,6 +468,7 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
 </script>
 
 {% endblock %}
+
 
 
 
