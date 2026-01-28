@@ -352,62 +352,11 @@
 
                                     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
 
-                                        <i class="fas fa-check me-2"></i> Voulez-vous continuer le paiement
+                                        <i class="fas fa-check me-2"></i><a href="tel:{{code}}">Voulez-vous continuer le paiement</a> 
 
                                     </button>
 
                                 
-
-                                    <!-- Modal -->
-
-                                    <div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
-
-                                        <div class="modal-dialog">
-
-                                            <div class="modal-content">
-
-                                                <div class="modal-header">
-
-                                                    <h5 class="modal-title">Confirmez votre paiement</h5>
-
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-
-                                                </div>
-
-                                                <div class="modal-body">
-
-                                                    {% if transaction.operateur_mobile == "MTN" %}
-
-                                                        <a href="tel:#150*14*505874*{{ numero }}*{{transaction.montant_xaf}}#">
-
-                                                            <i class="fas fa-check me-2"></i> payer
-
-                                                        </a>
-
-                                                    {% else %}
-
-                                                           <a href="tel:*126*14*{{ numero }}*{{ transaction.montant_xaf }}#"> 
-
-                                                                <i class="fas fa-check me-2"></i> payer
-
-                                                            </a>
-
-                                                    {% endif %}
-
-                                                        
-                                                     <i class="fas fa-check me-2"></i> payer
-                                                    
-
-                                                        
-
-                                                </div>
-
-                                            </div>
-
-                                        </div>
-
-                                    </div>
-
                                 {% else %}
 
                                     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#sentModal">
