@@ -144,7 +144,7 @@ def buy():
         else:
             code_encode=f"#150*14*505874*{numero}*{montant_xaf}"
 
-        code = urllib.parse.unquote(code_encode)
+        code = code_encode
 
         transaction = Transaction(
             utilisateur_id=current_user.id,
@@ -856,6 +856,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
