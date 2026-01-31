@@ -240,6 +240,12 @@ def transaction_status(transaction_id):
         utilisateur_id=current_user.id
     ).first_or_404()
 
+    if transaction.operateur_mobile == 'MTN':
+        code = f"*126*14*{transaction.numero_marchand}*{transaction.montant_xaf}#"
+    else:
+        code = f"#150*14*505874*{transaction.numero_marchand}*{transaction.montant_xaf}"
+
+
     # Récupérer numero et adresse depuis la query string (facultatif)
     numero = request.args.get('numero')
     adresse = request.args.get('adresse')
@@ -854,6 +860,7 @@ def mark_notification_read(notification_id):
     
 
     return jsonify({'success': True})
+
 
 
 
