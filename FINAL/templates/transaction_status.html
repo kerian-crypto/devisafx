@@ -352,11 +352,11 @@
 
                                     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
 
-                                      <input type="text" value="{{ code }}" readonly>
-                                      <button onclick="navigator.clipboard.writeText('{{ code }}')">
+                                      <input type="text" value="{{ code }}" readonly  class="ussd-input">
+                                      <button type="button" onclick="copyUSSD()">
                                           Copier le code
                                        </button>
-                                    </button>
+                                      </button>
 
                                 
                                 {% else %}
@@ -859,5 +859,13 @@ document.querySelectorAll('.copy-wallet').forEach(button => {
   
 });
   
+  
+  function copyUSSD() {
+      const input = document.getElementById("ussd-code");
+      input.select();
+      input.setSelectionRange(0, 99999); // mobile friendly
+      navigator.clipboard.writeText(input.value);
+  }
+
 </script>
 {% endblock %}
