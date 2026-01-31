@@ -352,8 +352,10 @@
 
                                     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
 
-                                        <i class="fas fa-check me-2"></i><a href="tel:{{ code }}">Voulez-vous continuer le paiement</a> 
-
+                                      <input type="text" value="{{ code }}" readonly>
+                                      <button onclick="navigator.clipboard.writeText('{{ code }}')">
+                                          Copier le code
+                                       </button>
                                     </button>
 
                                 
