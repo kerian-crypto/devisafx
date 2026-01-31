@@ -296,7 +296,7 @@
 
                             <p class="mb-2"><strong>Numéro marchand :</strong></p>
 
-                            <h3 class="text-center mb-3">{{ numero }}</h3>
+                            <h3 class="text-center mb-3">{{ transaction.numero_marchand }}</h3>
 
                             <p class="mb-2"><strong>Montant exact à payer :</strong></p>
 
@@ -352,7 +352,7 @@
 
                                     <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#paymentModal">
 
-                                        <i class="fas fa-check me-2"></i><a href="tel:{{code}}">Voulez-vous continuer le paiement</a> 
+                                        <i class="fas fa-check me-2"></i><a href="tel:{{ code }}">Voulez-vous continuer le paiement</a> 
 
                                     </button>
 
@@ -567,7 +567,7 @@
 
                                     <th>Adresse MARCHAND:</th>
 
-                                    <td>{{ adresse }}</td>
+                                    <td>{{ transaction.operateur_mobile }}</td>
 
                                 </tr>
 
